@@ -2,7 +2,6 @@
 package php7
 
 import (
-    "fmt"
     "strings"
     "strconv"
 
@@ -339,8 +338,6 @@ namespace_name:
             // save comments
             yylex.(*Parser).addNodeAllCommentsFromNextToken($1[len($1)-1], $2)
             yylex.(*Parser).addNodeCommentsFromToken(namePart, $3)
-
-            fmt.Printf("current token value : %q\n", yylex.(*Parser).currentToken.Value)
         }
 ;
 
