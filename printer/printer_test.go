@@ -2397,9 +2397,11 @@ func TestPrintAltWhile(t *testing.T) {
 				Stmts: []node.Node{
 					&stmt.AltWhile{
 						Cond: &expr.Variable{VarName: &node.Identifier{Value: "a"}},
-						Stmt: &stmt.InnerStmtList{
-							Stmts: []node.Node{
-								&stmt.Expression{Expr: &expr.Variable{VarName: &node.Identifier{Value: "b"}}},
+						Stmt: &stmt.StmtList{
+							InnerStmtList: &stmt.InnerStmtList{
+								Stmts: []node.Node{
+									&stmt.Expression{Expr: &expr.Variable{VarName: &node.Identifier{Value: "b"}}},
+								},
 							},
 						},
 					},

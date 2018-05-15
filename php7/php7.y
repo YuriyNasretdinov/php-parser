@@ -1649,15 +1649,26 @@ while_statement:
         statement
             {
                 $$ = stmt.NewWhile(nil, $1)
+
+                // save position
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodePosition($1))
             }
     |   ':' inner_statement_list T_ENDWHILE ';'
             {
                 innerStmtList := stmt.NewInnerStmtList($2)
-                $$ = stmt.NewAltWhile(nil, innerStmtList)
+                stmtList := stmt.NewStmtList(innerStmtList)
+                $$ = stmt.NewAltWhile(nil, stmtList)
 
+                // save position
                 yylex.(*Parser).positions.AddPosition(innerStmtList, yylex.(*Parser).positionBuilder.NewNodeListPosition($2))
+                yylex.(*Parser).positions.AddPosition(stmtList, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($$, $4)
+                if len($2) > 0 {yylex.(*Parser).addNodeInlineCommentsFromNextToken(lastNode($2), $3)}
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(innerStmtList, $3)
             }
 ;
 

@@ -1443,7 +1443,7 @@ func (p *Printer) printStmtAltWhile(n node.Node) {
 	p.Print(nn.Cond)
 	io.WriteString(p.w, ") :\n")
 
-	s := nn.Stmt.(*stmt.InnerStmtList)
+	s := nn.Stmt.(*stmt.StmtList).InnerStmtList
 	p.printNodes(s.Stmts)
 
 	io.WriteString(p.w, "\n")

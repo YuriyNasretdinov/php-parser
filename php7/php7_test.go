@@ -3289,10 +3289,12 @@ func TestWhileStmts(t *testing.T) {
 			},
 			&stmt.AltWhile{
 				Cond: &scalar.Lnumber{Value: "1"},
-				Stmt: &stmt.InnerStmtList{
-					Stmts: []node.Node{
-						&stmt.Break{
-							Expr: &scalar.Lnumber{Value: "3"},
+				Stmt: &stmt.StmtList{
+					InnerStmtList: &stmt.InnerStmtList{
+						Stmts: []node.Node{
+							&stmt.Break{
+								Expr: &scalar.Lnumber{Value: "3"},
+							},
 						},
 					},
 				},

@@ -1356,9 +1356,12 @@ while_statement:
     |   ':' inner_statement_list T_ENDWHILE ';'
             {
                 innerStmtList := stmt.NewInnerStmtList($2)
-                $$ = stmt.NewAltWhile(nil, innerStmtList)
+                stmtList := stmt.NewStmtList(innerStmtList)
+                $$ = stmt.NewAltWhile(nil, stmtList)
 
+                // save position
                 yylex.(*Parser).positions.AddPosition(innerStmtList, yylex.(*Parser).positionBuilder.NewNodeListPosition($2))
+                yylex.(*Parser).positions.AddPosition(stmtList, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
             }
 ;
