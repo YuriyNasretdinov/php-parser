@@ -1673,78 +1673,156 @@ while_statement:
 ;
 
 if_stmt_without_else:
-    T_IF '(' expr ')' statement
-        {
-            $$ = stmt.NewIf($3, $5, nil, nil)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $5))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   if_stmt_without_else T_ELSEIF '(' expr ')' statement
-        { 
-            _elseIf := stmt.NewElseIf($4, $6)
-            yylex.(*Parser).positions.AddPosition(_elseIf, yylex.(*Parser).positionBuilder.NewTokenNodePosition($2, $6))
-            $$ = $1.(*stmt.If).AddElseIf(_elseIf)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $6))
+        T_IF '(' expr ')' statement
+            {
+                $$ = stmt.NewIf($3, $5, nil, nil)
 
-            yylex.(*Parser).comments.AddComments(_elseIf, $2.Comments())
-        }
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $5))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+                yylex.(*Parser).addNodeCommentsFromToken($$, $2)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($3, $4)
+            }
+    |   if_stmt_without_else T_ELSEIF '(' expr ')' statement
+            { 
+                _elseIf := stmt.NewElseIf($4, $6)
+                $$ = $1.(*stmt.If).AddElseIf(_elseIf)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition(_elseIf, yylex.(*Parser).positionBuilder.NewTokenNodePosition($2, $6))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $6))
+
+                // save comments
+                elseIfs := $1.(*stmt.If).ElseIf
+                if len(elseIfs) > 1 {
+                    yylex.(*Parser).addNodeInlineCommentsFromNextToken(elseIfs[len(elseIfs)-2].(*stmt.ElseIf).Stmt, $2)
+                } else {
+                    yylex.(*Parser).addNodeInlineCommentsFromNextToken($1.(*stmt.If).Stmt, $2)
+                }
+
+                yylex.(*Parser).addNodeCommentsFromToken(_elseIf, $2)
+                yylex.(*Parser).addNodeCommentsFromToken(_elseIf, $3)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($4, $5)
+            }
 ;
 
 if_stmt:
-        if_stmt_without_else %prec T_NOELSE             { $$ = $1; }
+        if_stmt_without_else %prec T_NOELSE
+            { $$ = $1; }
     |   if_stmt_without_else T_ELSE statement
-        {
-            _else := stmt.NewElse($3)
-            yylex.(*Parser).positions.AddPosition(_else, yylex.(*Parser).positionBuilder.NewTokenNodePosition($2, $3))
-            $$ = $1.(*stmt.If).SetElse(_else)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+            {
+                _else := stmt.NewElse($3)
+                $$ = $1.(*stmt.If).SetElse(_else)
 
-            yylex.(*Parser).comments.AddComments($$, $2.Comments())
-        }
+                // save position
+                yylex.(*Parser).positions.AddPosition(_else, yylex.(*Parser).positionBuilder.NewTokenNodePosition($2, $3))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                elseIfs := $1.(*stmt.If).ElseIf
+                if len(elseIfs) > 0 {
+                    yylex.(*Parser).addNodeInlineCommentsFromNextToken(lastNode(elseIfs), $2)
+                } else {
+                    yylex.(*Parser).addNodeInlineCommentsFromNextToken($1.(*stmt.If).Stmt, $2)
+                }
+
+                yylex.(*Parser).addNodeCommentsFromToken(_else, $2)
+            }
 ;
 
 alt_if_stmt_without_else:
-    T_IF '(' expr ')' ':' inner_statement_list
-        { 
-            stmts := stmt.NewInnerStmtList($6)
-            yylex.(*Parser).positions.AddPosition(stmts, yylex.(*Parser).positionBuilder.NewNodeListPosition($6))
-            $$ = stmt.NewAltIf($3, stmts, nil, nil)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodeListPosition($1, $6))
+        T_IF '(' expr ')' ':' inner_statement_list
+            { 
+                stmts := stmt.NewInnerStmtList($6)
+                $$ = stmt.NewAltIf($3, stmts, nil, nil)
 
-            yylex.(*Parser).comments.AddComments(stmts, $5.Comments())
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+                // save position
+                yylex.(*Parser).positions.AddPosition(stmts, yylex.(*Parser).positionBuilder.NewNodeListPosition($6))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodeListPosition($1, $6))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+                yylex.(*Parser).addNodeCommentsFromToken($$, $2)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($3, $4)
+                yylex.(*Parser).addNodeCommentsFromToken(stmts, $5)
+            }
     |   alt_if_stmt_without_else T_ELSEIF '(' expr ')' ':' inner_statement_list
-        {
-            stmts := stmt.NewInnerStmtList($7)
-            yylex.(*Parser).positions.AddPosition(stmts, yylex.(*Parser).positionBuilder.NewNodeListPosition($7))
-            _elseIf := stmt.NewAltElseIf($4, stmts)
-            yylex.(*Parser).positions.AddPosition(_elseIf, yylex.(*Parser).positionBuilder.NewTokenNodeListPosition($2, $7))
-            $$ = $1.(*stmt.AltIf).AddElseIf(_elseIf)
+            {
+                stmts := stmt.NewInnerStmtList($7)
+                _elseIf := stmt.NewAltElseIf($4, stmts)
+                $$ = $1.(*stmt.AltIf).AddElseIf(_elseIf)
 
-            yylex.(*Parser).comments.AddComments(stmts, $6.Comments())
-            yylex.(*Parser).comments.AddComments(_elseIf, $2.Comments())
-        }
+                // save position
+                yylex.(*Parser).positions.AddPosition(stmts, yylex.(*Parser).positionBuilder.NewNodeListPosition($7))
+                if len($7) > 0 {
+                    yylex.(*Parser).positions.AddPosition(_elseIf, yylex.(*Parser).positionBuilder.NewTokenNodeListPosition($2, $7))
+                } else {
+                    yylex.(*Parser).positions.AddPosition(_elseIf, yylex.(*Parser).positionBuilder.NewTokensPosition($2, $6))
+                }
+
+                // save comments
+                elseIfs := $1.(*stmt.AltIf).ElseIf
+                if len(elseIfs) > 1 {
+                    yylex.(*Parser).addNodeOutlineCommentsFromNextToken(elseIfs[len(elseIfs)-2].(*stmt.AltElseIf).Stmt, $2)
+                } else {
+                    yylex.(*Parser).addNodeOutlineCommentsFromNextToken($1.(*stmt.AltIf).Stmt, $2)
+                }
+
+                yylex.(*Parser).addNodeCommentsFromToken(_elseIf, $2)
+                yylex.(*Parser).addNodeCommentsFromToken(_elseIf, $3)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($4, $5)
+                yylex.(*Parser).addNodeCommentsFromToken(stmts, $6)
+            }
 ;
 
 alt_if_stmt:
-    alt_if_stmt_without_else T_ENDIF ';'
-        {
-            $$ = $1
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $3))
-        }
-    |   alt_if_stmt_without_else T_ELSE ':' inner_statement_list T_ENDIF ';'
-        {
-            stmts := stmt.NewInnerStmtList($4)
-            yylex.(*Parser).positions.AddPosition(stmts, yylex.(*Parser).positionBuilder.NewNodeListPosition($4))
-            _else := stmt.NewAltElse(stmts)
-            yylex.(*Parser).positions.AddPosition(_else, yylex.(*Parser).positionBuilder.NewTokenNodeListPosition($2, $4))
-            $$ = $1.(*stmt.AltIf).SetElse(_else)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $6))
+        alt_if_stmt_without_else T_ENDIF ';'
+            {
+                $$ = $1
 
-            yylex.(*Parser).comments.AddComments(stmts, $3.Comments())
-            yylex.(*Parser).comments.AddComments(_else, $2.Comments())
-        }
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $3))
+
+                // save comments
+                elseIfs := $1.(*stmt.AltIf).ElseIf
+                if len(elseIfs) > 0 {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken(lastNode(elseIfs).(*stmt.AltElseIf).Stmt, $2)
+                } else {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken($1.(*stmt.AltIf).Stmt, $2)
+                }
+
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($$, $3)
+            }
+    |   alt_if_stmt_without_else T_ELSE ':' inner_statement_list T_ENDIF ';'
+            {
+                stmts := stmt.NewInnerStmtList($4)
+                _else := stmt.NewAltElse(stmts)
+                $$ = $1.(*stmt.AltIf).SetElse(_else)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition(stmts, yylex.(*Parser).positionBuilder.NewNodeListPosition($4))
+                if len($4) > 0 {
+                    yylex.(*Parser).positions.AddPosition(_else, yylex.(*Parser).positionBuilder.NewTokenNodeListPosition($2, $4))
+                } else {
+                    yylex.(*Parser).positions.AddPosition(_else, yylex.(*Parser).positionBuilder.NewTokensPosition($2, $3))
+                }
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $6))
+
+                // save comments
+                elseIfs := $1.(*stmt.AltIf).ElseIf
+                if len(elseIfs) > 0 {
+                    yylex.(*Parser).addNodeOutlineCommentsFromNextToken(lastNode(elseIfs).(*stmt.AltElseIf).Stmt, $2)
+                } else {
+                    yylex.(*Parser).addNodeOutlineCommentsFromNextToken($1.(*stmt.AltIf).Stmt, $2)
+                }
+
+                yylex.(*Parser).addNodeCommentsFromToken(_else, $2)
+                yylex.(*Parser).addNodeCommentsFromToken(_else, $3)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(stmts, $5)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($$, $6)
+            }
 ;
 
 parameter_list:

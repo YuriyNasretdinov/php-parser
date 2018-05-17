@@ -144,6 +144,22 @@ func (l *Parser) addNodeInlineCommentsFromNextToken(n node.Node, t *scanner.Toke
 	t.SetComments(tc)
 }
 
+func (l *Parser) addNodeOutlineCommentsFromNextToken(n node.Node, t *scanner.Token) {
+	var tc []*comment.Comment
+
+	for _, c := range t.Comments() {
+		if c.Position().EndLine != t.Position().StartLine {
+			c.SetSide(comment.After)
+
+			l.comments.AddComment(n, c)
+		} else {
+			tc = append(tc, c)
+		}
+	}
+
+	t.SetComments(tc)
+}
+
 func (l *Parser) addNodeCommentsFromChildNode(n node.Node, cn node.Node) {
 	var d []int
 
