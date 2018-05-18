@@ -1831,65 +1831,84 @@ parameter_list:
 ;
 
 non_empty_parameter_list:
-        parameter                                       { $$ = []node.Node{$1} }
-    |   non_empty_parameter_list ',' parameter          { $$ = append($1, $3) }
+        parameter
+            { $$ = []node.Node{$1} }
+    |   non_empty_parameter_list ',' parameter
+            {
+                $$ = append($1, $3)
+                
+                // save comments
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(lastNode($1), $2)
+            }
 ;
 
 parameter:
     optional_type is_reference is_variadic T_VARIABLE
         {
             identifier := node.NewIdentifier(strings.TrimLeft($4.Value, "$"))
-            yylex.(*Parser).positions.AddPosition(identifier, yylex.(*Parser).positionBuilder.NewTokenPosition($4))
             variable := expr.NewVariable(identifier)
-            yylex.(*Parser).positions.AddPosition(variable, yylex.(*Parser).positionBuilder.NewTokenPosition($4))
-
-            yylex.(*Parser).comments.AddComments($$, $4.Comments())
-            yylex.(*Parser).comments.AddComments($$, $4.Comments())
             
             if $1 != nil {
                 $$ = node.NewParameter($1, variable, nil, $2 != nil, $3 != nil)
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $4))
-                yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
             } else if $2 != nil {
                 $$ = node.NewParameter($1, variable, nil, $2 != nil, $3 != nil)
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($2, $4))
-                yylex.(*Parser).comments.AddComments($$, $2.Comments())
             } else if $3 != nil {
                 $$ = node.NewParameter($1, variable, nil, $2 != nil, $3 != nil)
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($3, $4))
-                yylex.(*Parser).comments.AddComments($$, $3.Comments())
             } else {
                 $$ = node.NewParameter($1, variable, nil, $2 != nil, $3 != nil)
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($4))
-                yylex.(*Parser).comments.AddComments($$, $4.Comments())
+            }
+
+            // save position
+            yylex.(*Parser).positions.AddPosition(identifier, yylex.(*Parser).positionBuilder.NewTokenPosition($4))
+            yylex.(*Parser).positions.AddPosition(variable, yylex.(*Parser).positionBuilder.NewTokenPosition($4))
+
+            // save comments
+            if $1 != nil {yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)}
+            if $2 != nil {yylex.(*Parser).addNodeCommentsFromToken($$, $2)}
+            if $3 != nil {yylex.(*Parser).addNodeCommentsFromToken($$, $3)}
+
+            if $1 == nil && $2 == nil && $3 == nil {
+                yylex.(*Parser).addNodeCommentsFromToken($$, $4)
+            } else {
+                yylex.(*Parser).addNodeCommentsFromToken(variable, $4)
             }
         }
     |   optional_type is_reference is_variadic T_VARIABLE '=' expr
         {
             identifier := node.NewIdentifier(strings.TrimLeft($4.Value, "$"))
-            yylex.(*Parser).positions.AddPosition(identifier, yylex.(*Parser).positionBuilder.NewTokenPosition($4))
             variable := expr.NewVariable(identifier)
-            yylex.(*Parser).positions.AddPosition(variable, yylex.(*Parser).positionBuilder.NewTokenPosition($4))
-
-            yylex.(*Parser).comments.AddComments($$, $4.Comments())
-            yylex.(*Parser).comments.AddComments($$, $4.Comments())
 
             if $1 != nil {
                 $$ = node.NewParameter($1, variable, $6, $2 != nil, $3 != nil)
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $6))
-                yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
             } else if $2 != nil {
                 $$ = node.NewParameter($1, variable, $6, $2 != nil, $3 != nil)
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($2, $6))
-                yylex.(*Parser).comments.AddComments($$, $2.Comments())
             } else if $3 != nil {
                 $$ = node.NewParameter($1, variable, $6, $2 != nil, $3 != nil)
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($3, $6))
-                yylex.(*Parser).comments.AddComments($$, $3.Comments())
             } else {
                 $$ = node.NewParameter($1, variable, $6, $2 != nil, $3 != nil)
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($4, $6))
-                yylex.(*Parser).comments.AddComments($$, $4.Comments())
+            }
+
+            // save position
+            yylex.(*Parser).positions.AddPosition(identifier, yylex.(*Parser).positionBuilder.NewTokenPosition($4))
+            yylex.(*Parser).positions.AddPosition(variable, yylex.(*Parser).positionBuilder.NewTokenPosition($4))
+
+            // save comments
+            if $1 != nil {yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)}
+            if $2 != nil {yylex.(*Parser).addNodeCommentsFromToken($$, $2)}
+            if $3 != nil {yylex.(*Parser).addNodeCommentsFromToken($$, $3)}
+
+            if $1 == nil && $2 == nil && $3 == nil {
+                yylex.(*Parser).addNodeCommentsFromToken($$, $4)
+            } else {
+                yylex.(*Parser).addNodeCommentsFromToken(variable, $4)
             }
         }
 ;
@@ -1904,8 +1923,12 @@ type_expr:
     |   '?' type
         {
             $$ = node.NewNullable($2)
+            
+            // save position
             yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
+            
+            // save comments
+            yylex.(*Parser).addNodeCommentsFromToken($$, $1)
         }
 ;
 
@@ -1913,21 +1936,40 @@ type:
     T_ARRAY
         {
             $$ = node.NewIdentifier($1.Value)
+
+            // save position
             yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
+
+            // save comments
+            yylex.(*Parser).addNodeCommentsFromToken($$, $1)
         }
     |   T_CALLABLE
         {
             $$ = node.NewIdentifier($1.Value)
+
+            // save position
             yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
+
+            // save comments
+            yylex.(*Parser).addNodeCommentsFromToken($$, $1)
         }
-    |   name                                            { $$ = $1; }
+    |   name
+        { $$ = $1; }
 ;
 
 return_type:
-        /* empty */                                     { $$ = nil }
-    |   ':' type_expr                                   { $$ = $2; }
+        /* empty */
+            { $$ = nil }
+    |   ':' type_expr
+            {
+                $$ = $2;
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
 ;
 
 argument_list:
@@ -1938,6 +1980,10 @@ argument_list:
 
             // save position
             yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $2))
+
+            // save comments
+            yylex.(*Parser).addNodeAllCommentsFromNextToken(innerArgumentList, $2)
+            yylex.(*Parser).addNodeCommentsFromToken($$, $1)
         }
     |   '(' non_empty_argument_list possible_comma ')'
         {
@@ -1947,26 +1993,46 @@ argument_list:
             // save position
             yylex.(*Parser).positions.AddPosition(innerArgumentList, yylex.(*Parser).positionBuilder.NewNodeListPosition($2))
             yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
+
+            // save comments
+            yylex.(*Parser).addNodeAllCommentsFromNextToken(innerArgumentList, $4)
+            if $3 != nil { yylex.(*Parser).addNodeAllCommentsFromNextToken(innerArgumentList, $3) }
+            yylex.(*Parser).addNodeCommentsFromToken($$, $1)
         }
 ;
 
 non_empty_argument_list:
-        argument                                        { $$ = []node.Node{$1} }
-    |   non_empty_argument_list ',' argument            { $$ = append($1, $3) }
+        argument
+            { $$ = []node.Node{$1} }
+    |   non_empty_argument_list ',' argument 
+            {
+                $$ = append($1, $3)
+                
+                // save comments
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(lastNode($1), $2)
+            }
 ;
 
 argument:
     expr
         {
             $$ = node.NewArgument($1, false, false)
+
+            // save position
             yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodePosition($1))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
+
+            // save comments
+            yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
         }
     |   T_ELLIPSIS expr
         {
             $$ = node.NewArgument($2, true, false)
+
+            // save position
             yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
+
+            // save comments
+            yylex.(*Parser).addNodeCommentsFromToken($$, $1)
         }
 ;
 
