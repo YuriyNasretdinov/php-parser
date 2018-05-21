@@ -178,6 +178,25 @@ func (l *Parser) addNodeCommentsFromChildNode(n node.Node, cn node.Node) {
 	}
 }
 
+func (l *Parser) addNodeCommentsFromNextNode(n node.Node, cn node.Node) {
+	var d []int
+
+	// set comments from child node
+	for i, c := range l.comments[cn] {
+		if c.Side() == comment.Before {
+			c.SetSide(comment.After)
+			l.comments.AddComment(n, c)
+			d = append(d, i)
+		}
+	}
+
+	// remove comments from child node
+	for j := len(d) - 1; j >= 0; j-- {
+		i := d[j]
+		l.comments[cn] = append(l.comments[cn][:i], l.comments[cn][i+1:]...)
+	}
+}
+
 func (l *Parser) addNodeInlineCommentsFromNextNode(n node.Node, nn node.Node) {
 	var tc []*comment.Comment
 
