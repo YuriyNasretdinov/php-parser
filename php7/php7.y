@@ -2249,87 +2249,135 @@ trait_adaptations:
 ;
 
 trait_adaptation_list:
-        trait_adaptation                                { $$ = []node.Node{$1} }
-    |   trait_adaptation_list trait_adaptation          { $$ = append($1, $2) }
+        trait_adaptation
+            { $$ = []node.Node{$1} }
+    |   trait_adaptation_list trait_adaptation
+            {
+                $$ = append($1, $2)
+
+                // save comments
+                if len($1) > 0 { yylex.(*Parser).addNodeInlineCommentsFromNextNode(lastNode($1), $2) }
+            }
 ;
 
 trait_adaptation:
-        trait_precedence ';'                            { $$ = $1; }
-    |   trait_alias ';'                                 { $$ = $1; }
+        trait_precedence ';'
+            {
+                $$ = $1;
+
+                // save comments
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
+    |   trait_alias ';'
+            {
+                $$ = $1;
+
+                // save comments
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
 ;
 
 trait_precedence:
-    absolute_trait_method_reference T_INSTEADOF name_list
-        {
-            $$ = stmt.NewTraitUsePrecedence($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeNodeListPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+        absolute_trait_method_reference T_INSTEADOF name_list
+            {
+                $$ = stmt.NewTraitUsePrecedence($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeNodeListPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
 ;
 
 trait_alias:
-    trait_method_reference T_AS T_STRING
-        {
-            alias := node.NewIdentifier($3.Value)
-            yylex.(*Parser).positions.AddPosition(alias, yylex.(*Parser).positionBuilder.NewTokenPosition($3))
-            $$ = stmt.NewTraitUseAlias($1, nil, alias)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $3))
-            
-            yylex.(*Parser).comments.AddComments(alias, $3.Comments())
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+        trait_method_reference T_AS T_STRING
+            {
+                alias := node.NewIdentifier($3.Value)
+                $$ = stmt.NewTraitUseAlias($1, nil, alias)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition(alias, yylex.(*Parser).positionBuilder.NewTokenPosition($3))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $3))
+                
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                yylex.(*Parser).addNodeCommentsFromToken(alias, $3)
+            }
     |   trait_method_reference T_AS reserved_non_modifiers
-        {
-            alias := node.NewIdentifier($3.Value)
-            yylex.(*Parser).positions.AddPosition(alias, yylex.(*Parser).positionBuilder.NewTokenPosition($3))
-            $$ = stmt.NewTraitUseAlias($1, nil, alias)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $3))
-            
-            yylex.(*Parser).comments.AddComments(alias, $3.Comments())
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                alias := node.NewIdentifier($3.Value)
+                $$ = stmt.NewTraitUseAlias($1, nil, alias)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition(alias, yylex.(*Parser).positionBuilder.NewTokenPosition($3))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $3))
+                
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                yylex.(*Parser).addNodeCommentsFromToken(alias, $3)
+            }
     |   trait_method_reference T_AS member_modifier identifier
-        {
-            alias := node.NewIdentifier($4.Value)
-            yylex.(*Parser).positions.AddPosition(alias, yylex.(*Parser).positionBuilder.NewTokenPosition($4))
-            $$ = stmt.NewTraitUseAlias($1, $3, alias)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $4))
-            
-            yylex.(*Parser).comments.AddComments(alias, $4.Comments())
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                alias := node.NewIdentifier($4.Value)
+                $$ = stmt.NewTraitUseAlias($1, $3, alias)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition(alias, yylex.(*Parser).positionBuilder.NewTokenPosition($4))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $4))
+                
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                yylex.(*Parser).addNodeCommentsFromToken(alias, $4)
+            }
     |   trait_method_reference T_AS member_modifier
-        {
-            $$ = stmt.NewTraitUseAlias($1, $3, nil)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = stmt.NewTraitUseAlias($1, $3, nil)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
 ;
 
 trait_method_reference:
-    identifier
-        {
-            name := node.NewIdentifier($1.Value)
-            yylex.(*Parser).positions.AddPosition(name, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            $$ = stmt.NewTraitMethodRef(nil, name)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            
-            yylex.(*Parser).comments.AddComments(name, $1.Comments())
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   absolute_trait_method_reference                 { $$ = $1; }
+        identifier
+            {
+                name := node.NewIdentifier($1.Value)
+                $$ = stmt.NewTraitMethodRef(nil, name)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition(name, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+                
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   absolute_trait_method_reference
+            { $$ = $1; }
 ;
 
 absolute_trait_method_reference:
     name T_PAAMAYIM_NEKUDOTAYIM identifier
         {
             target := node.NewIdentifier($3.Value)
-            yylex.(*Parser).positions.AddPosition(target, yylex.(*Parser).positionBuilder.NewTokenPosition($3))
             $$ = stmt.NewTraitMethodRef($1, target)
+
+            // save position
+            yylex.(*Parser).positions.AddPosition(target, yylex.(*Parser).positionBuilder.NewTokenPosition($3))
             yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $3))
             
-            yylex.(*Parser).comments.AddComments(target, $3.Comments())
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
+            // save comments
+            yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+            yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            yylex.(*Parser).addNodeCommentsFromToken(target, $3)
         }
 ;
 
