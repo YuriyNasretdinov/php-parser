@@ -143,6 +143,29 @@ import (
 %token <token> T_COALESCE
 %token <token> T_SPACESHIP
 %token <token> T_NOELSE
+%token <token> T_PLUS_EQUAL
+%token <token> T_MINUS_EQUAL
+%token <token> T_MUL_EQUAL
+%token <token> T_POW_EQUAL
+%token <token> T_DIV_EQUAL
+%token <token> T_CONCAT_EQUAL
+%token <token> T_MOD_EQUAL
+%token <token> T_AND_EQUAL
+%token <token> T_OR_EQUAL
+%token <token> T_XOR_EQUAL
+%token <token> T_SL_EQUAL
+%token <token> T_SR_EQUAL
+%token <token> T_BOOLEAN_OR
+%token <token> T_BOOLEAN_AND
+%token <token> T_POW
+%token <token> T_SL
+%token <token> T_SR
+%token <token> T_IS_IDENTICAL
+%token <token> T_IS_NOT_IDENTICAL
+%token <token> T_IS_EQUAL
+%token <token> T_IS_NOT_EQUAL
+%token <token> T_IS_SMALLER_OR_EQUAL
+%token <token> T_IS_GREATER_OR_EQUAL
 %token <token> '"'
 %token <token> '`'
 %token <token> '{'
@@ -164,6 +187,13 @@ import (
 %token <token> ','
 %token <token> '|'
 %token <token> '='
+%token <token> '^'
+%token <token> '.'
+%token <token> '*'
+%token <token> '/'
+%token <token> '%'
+%token <token> '<'
+%token <token> '>'
 
 %left T_INCLUDE T_INCLUDE_ONCE T_EVAL T_REQUIRE T_REQUIRE_ONCE
 %left ','
@@ -2228,7 +2258,7 @@ trait_adaptations:
                 // save position
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $2))
 
-                // save coments
+                // save comments
                 yylex.(*Parser).addNodeCommentsFromToken($$, $1)
                 yylex.(*Parser).addNodeAllCommentsFromNextToken(innerAdaptationList, $2)
             }
@@ -2597,29 +2627,47 @@ const_decl:
 ;
 
 echo_expr_list:
-        echo_expr_list ',' echo_expr                    { $$ = append($1, $3) }
-    |   echo_expr                                       { $$ = []node.Node{$1} }
+        echo_expr_list ',' echo_expr
+            {
+                $$ = append($1, $3)
+
+                // save comments
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(lastNode($1), $2)
+                yylex.(*Parser).addNodeInlineCommentsFromNextNode(lastNode($1), $3)
+            }
+    |   echo_expr
+            { $$ = []node.Node{$1} }
 ;
 
 echo_expr:
-    expr                                                { $$ = $1 }
+        expr
+            { $$ = $1 }
 ;
 
 for_exprs:
         /* empty */
-        {
-            $$ = stmt.NewForExprList(nil);
-        }
+            {
+                $$ = stmt.NewForExprList(nil);
+            }
     |   non_empty_for_exprs
-        {
-            $$ = stmt.NewForExprList($1);
-            
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeListPosition($1))
-        }
+            {
+                $$ = stmt.NewForExprList($1);
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeListPosition($1))
+            }
 ;
 non_empty_for_exprs:
-        non_empty_for_exprs ',' expr                    { $$ = append($1, $3) }
-    |   expr                                            { $$ = []node.Node{$1} }
+        non_empty_for_exprs ',' expr
+            {
+                $$ = append($1, $3)
+
+                // save comments
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(lastNode($1), $2)
+                yylex.(*Parser).addNodeInlineCommentsFromNextNode(lastNode($1), $3)
+            }
+    |   expr
+            { $$ = []node.Node{$1} }
 ;
 
 anonymous_class:
@@ -2636,10 +2684,16 @@ anonymous_class:
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $8))
             }
 
+            // save position
             yylex.(*Parser).positions.AddPosition(innerStmtList, yylex.(*Parser).positionBuilder.NewNodeListPosition($7))
             yylex.(*Parser).positions.AddPosition(stmtList, yylex.(*Parser).positionBuilder.NewTokensPosition($6, $8))
 
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
+            // save comments
+            yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+
+            yylex.(*Parser).addNodeCommentsFromToken(stmtList, $6)
+            if len($7) > 0 {yylex.(*Parser).addNodeInlineCommentsFromNextToken(lastNode($7), $8)}
+            yylex.(*Parser).addNodeAllCommentsFromNextToken(innerStmtList, $8)
         }
 ;
 
@@ -2654,354 +2708,631 @@ new_expr:
                 $$ = expr.NewNew($2, nil)
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
             }
-
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
+            
+            // save comments
+            yylex.(*Parser).addNodeCommentsFromToken($$, $1)
         }
     |   T_NEW anonymous_class
         {
             $$ = expr.NewNew($2, nil)
 
+            // save position
             yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
 
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
+            // save comments
+            yylex.(*Parser).addNodeCommentsFromToken($$, $1)
         }
 ;
 
 expr_without_variable:
-    T_LIST '(' array_pair_list ')' '=' expr
-        {
-            list := expr.NewList($3)
-            yylex.(*Parser).positions.AddPosition(list, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
-            $$ = assign.NewAssign(list, $6)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $6))
+        T_LIST '(' array_pair_list ')' '=' expr
+            {
+                list := expr.NewList($3)
+                $$ = assign.NewAssign(list, $6)
 
-            yylex.(*Parser).comments.AddComments(list, $1.Comments())
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+                // save position
+                yylex.(*Parser).positions.AddPosition(list, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $6))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+                yylex.(*Parser).addNodeCommentsFromToken(list, $2)
+                if len($3) > 0 {yylex.(*Parser).addNodeInlineCommentsFromNextToken(lastNode($3), $4)}
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(list, $5)
+            }
     |   '[' array_pair_list ']' '=' expr
-        {
-            shortList := expr.NewShortList($2)
-            yylex.(*Parser).positions.AddPosition(shortList, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $3))
-            $$ = assign.NewAssign(shortList, $5)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $5))
+            {
+                shortList := expr.NewShortList($2)
+                $$ = assign.NewAssign(shortList, $5)
 
-            yylex.(*Parser).comments.AddComments(shortList, $1.Comments())
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+                // save position
+                yylex.(*Parser).positions.AddPosition(shortList, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $3))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $5))
+
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+                if len($2) > 0 {yylex.(*Parser).addNodeInlineCommentsFromNextToken(lastNode($2), $3)}
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(shortList, $4)
+            }
     |   variable '=' expr
-        {
-            $$ = assign.NewAssign($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = assign.NewAssign($1, $3)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable '=' '&' expr
-        {
-            $$ = assign.NewReference($1, $4)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $4))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = assign.NewReference($1, $4)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $4))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $3)
+            }
     |   T_CLONE expr
-        {
-            $$ = expr.NewClone($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewClone($2)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   variable T_PLUS_EQUAL expr
-        {
-            $$ = assign.NewPlus($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = assign.NewPlus($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable T_MINUS_EQUAL expr
-        {
-            $$ = assign.NewMinus($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = assign.NewMinus($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable T_MUL_EQUAL expr
-        {
-            $$ = assign.NewMul($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = assign.NewMul($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable T_POW_EQUAL expr
-        {
-            $$ = assign.NewPow($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = assign.NewPow($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable T_DIV_EQUAL expr
-        {
-            $$ = assign.NewDiv($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = assign.NewDiv($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable T_CONCAT_EQUAL expr
-        {
-            $$ = assign.NewConcat($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = assign.NewConcat($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable T_MOD_EQUAL expr
-        {
-            $$ = assign.NewMod($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = assign.NewMod($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable T_AND_EQUAL expr
-        {
-            $$ = assign.NewBitwiseAnd($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = assign.NewBitwiseAnd($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable T_OR_EQUAL expr
-        {
-            $$ = assign.NewBitwiseOr($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = assign.NewBitwiseOr($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable T_XOR_EQUAL expr
-        {
-            $$ = assign.NewBitwiseXor($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = assign.NewBitwiseXor($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable T_SL_EQUAL expr
-        {
-            $$ = assign.NewShiftLeft($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = assign.NewShiftLeft($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable T_SR_EQUAL expr
-        {
-            $$ = assign.NewShiftRight($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = assign.NewShiftRight($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable T_INC
-        {
-            $$ = expr.NewPostInc($1)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewPostInc($1)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   T_INC variable
-        {
-            $$ = expr.NewPreInc($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewPreInc($2)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   variable T_DEC
-        {
-            $$ = expr.NewPostDec($1)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewPostDec($1)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   T_DEC variable
-        {
-            $$ = expr.NewPreDec($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewPreDec($2)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   expr T_BOOLEAN_OR expr
-        {
-            $$ = binary.NewBooleanOr($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewBooleanOr($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr T_BOOLEAN_AND expr
-        {
-            $$ = binary.NewBooleanAnd($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewBooleanAnd($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr T_LOGICAL_OR expr
-        {
-            $$ = binary.NewLogicalOr($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewLogicalOr($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr T_LOGICAL_AND expr
-        {
-            $$ = binary.NewLogicalAnd($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewLogicalAnd($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr T_LOGICAL_XOR expr
-        {
-            $$ = binary.NewLogicalXor($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewLogicalXor($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr '|' expr
-        {
-            $$ = binary.NewBitwiseOr($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewBitwiseOr($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr '&' expr
-        {
-            $$ = binary.NewBitwiseAnd($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewBitwiseAnd($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr '^' expr
-        {
-            $$ = binary.NewBitwiseXor($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewBitwiseXor($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr '.' expr
-        {
-            $$ = binary.NewConcat($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewConcat($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr '+' expr
-        {
-            $$ = binary.NewPlus($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewPlus($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr '-' expr
-        {
-            $$ = binary.NewMinus($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewMinus($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr '*' expr
-        {
-            $$ = binary.NewMul($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewMul($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr T_POW expr
-        {
-            $$ = binary.NewPow($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewPow($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr '/' expr
-        {
-            $$ = binary.NewDiv($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewDiv($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr '%' expr
-        {
-            $$ = binary.NewMod($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewMod($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr T_SL expr
-        {
-            $$ = binary.NewShiftLeft($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewShiftLeft($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr T_SR expr
-        {
-            $$ = binary.NewShiftRight($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewShiftRight($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   '+' expr %prec T_INC
-        {
-            $$ = expr.NewUnaryPlus($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewUnaryPlus($2)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   '-' expr %prec T_INC
-        {
-            $$ = expr.NewUnaryMinus($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewUnaryMinus($2)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   '!' expr
-        {
-            $$ = expr.NewBooleanNot($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewBooleanNot($2)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   '~' expr
-        {
-            $$ = expr.NewBitwiseNot($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewBitwiseNot($2)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   expr T_IS_IDENTICAL expr
-        {
-            $$ = binary.NewIdentical($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewIdentical($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr T_IS_NOT_IDENTICAL expr
-        {
-            $$ = binary.NewNotIdentical($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewNotIdentical($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr T_IS_EQUAL expr
-        {
-            $$ = binary.NewEqual($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewEqual($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr T_IS_NOT_EQUAL expr
-        {
-            $$ = binary.NewNotEqual($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewNotEqual($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr '<' expr
-        {
-            $$ = binary.NewSmaller($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewSmaller($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr T_IS_SMALLER_OR_EQUAL expr
-        {
-            $$ = binary.NewSmallerOrEqual($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewSmallerOrEqual($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr '>' expr
-        {
-            $$ = binary.NewGreater($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewGreater($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr T_IS_GREATER_OR_EQUAL expr
-        {
-            $$ = binary.NewGreaterOrEqual($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewGreaterOrEqual($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr T_SPACESHIP expr
-        {
-            $$ = binary.NewSpaceship($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = binary.NewSpaceship($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr T_INSTANCEOF class_name_reference
-        {
-            $$ = expr.NewInstanceOf($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
-    |   '(' expr ')'                                    { $$ = $2; }
-    |   new_expr                                        { $$ = $1; }
+            {
+                $$ = expr.NewInstanceOf($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
+    |   '(' expr ')'
+            {
+                $$ = $2;
+
+                // save comments
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($2, $3)
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   new_expr
+            { $$ = $1; }
     |   expr '?' expr ':' expr
-        {
-            $$ = expr.NewTernary($1, $3, $5)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $5))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewTernary($1, $3, $5)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $5))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($3, $4)
+            }
     |   expr '?' ':' expr
-        {
-            $$ = expr.NewTernary($1, nil, $4)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $4))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewTernary($1, nil, $4)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $4))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $3)
+            }
     |   expr T_COALESCE expr
         {
             $$ = binary.NewCoalesce($1, $3)
