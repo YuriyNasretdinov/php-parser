@@ -3511,13 +3511,24 @@ expr_without_variable:
                 parameterList := node.NewParameterList(innerParameterList)
                 $$ = expr.NewClosure(parameterList, $7, $8, stmtList, false, $2 != nil, $3)
 
+                // save position
                 yylex.(*Parser).positions.AddPosition(innerStmtList, yylex.(*Parser).positionBuilder.NewNodeListPosition($10))
                 yylex.(*Parser).positions.AddPosition(stmtList, yylex.(*Parser).positionBuilder.NewTokensPosition($9, $11))
                 yylex.(*Parser).positions.AddPosition(innerParameterList, yylex.(*Parser).positionBuilder.NewNodeListPosition($5))
                 yylex.(*Parser).positions.AddPosition(parameterList, yylex.(*Parser).positionBuilder.NewTokensPosition($4, $6))
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $11))
                 
-                yylex.(*Parser).comments.AddComments($$, $1.Comments())
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+                if $2 != nil { yylex.(*Parser).addNodeCommentsFromToken($$, $2) }
+
+                yylex.(*Parser).addNodeCommentsFromToken(parameterList, $4)
+                if len($5) > 0 {yylex.(*Parser).addNodeInlineCommentsFromNextToken(lastNode($5), $6)}
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(innerParameterList, $6)
+
+                yylex.(*Parser).addNodeCommentsFromToken(stmtList, $9)
+                if len($10) > 0 {yylex.(*Parser).addNodeInlineCommentsFromNextToken(lastNode($10), $11)}
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(innerStmtList, $11)
             }
     |   T_STATIC T_FUNCTION returns_ref backup_doc_comment '(' parameter_list ')' lexical_vars return_type '{' inner_statement_list '}'
             {
@@ -3527,13 +3538,24 @@ expr_without_variable:
                 parameterList := node.NewParameterList(innerParameterList)
                 $$ = expr.NewClosure(parameterList, $8, $9, stmtList, true, $3 != nil, $4)
 
+                // save position
                 yylex.(*Parser).positions.AddPosition(innerStmtList, yylex.(*Parser).positionBuilder.NewNodeListPosition($11))
                 yylex.(*Parser).positions.AddPosition(stmtList, yylex.(*Parser).positionBuilder.NewTokensPosition($10, $12))
                 yylex.(*Parser).positions.AddPosition(innerParameterList, yylex.(*Parser).positionBuilder.NewNodeListPosition($6))
                 yylex.(*Parser).positions.AddPosition(parameterList, yylex.(*Parser).positionBuilder.NewTokensPosition($5, $7))
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $12))
                 
-                yylex.(*Parser).comments.AddComments($$, $1.Comments())
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+                if $2 != nil { yylex.(*Parser).addNodeCommentsFromToken($$, $2) }
+
+                yylex.(*Parser).addNodeCommentsFromToken(parameterList, $5)
+                if len($6) > 0 {yylex.(*Parser).addNodeInlineCommentsFromNextToken(lastNode($6), $7)}
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(innerParameterList, $7)
+
+                yylex.(*Parser).addNodeCommentsFromToken(stmtList, $10)
+                if len($11) > 0 {yylex.(*Parser).addNodeInlineCommentsFromNextToken(lastNode($11), $12)}
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(innerStmtList, $12)
             }
 ;
 
