@@ -3334,107 +3334,175 @@ expr_without_variable:
                 yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $3)
             }
     |   expr T_COALESCE expr
-        {
-            $$ = binary.NewCoalesce($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
-    |   internal_functions_in_yacc                      { $$ = $1}
-    |   T_INT_CAST expr
-        {
-            $$ = cast.NewInt($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_DOUBLE_CAST expr
-        {
-            $$ = cast.NewDouble($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_STRING_CAST expr
-        {
-            $$ = cast.NewString($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_ARRAY_CAST expr
-        {
-            $$ = cast.NewArray($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_OBJECT_CAST expr
-        {
-            $$ = cast.NewObject($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_BOOL_CAST expr
-        {
-            $$ = cast.NewBool($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_UNSET_CAST expr
-        {
-            $$ = cast.NewUnset($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_EXIT exit_expr
-        {
-            if (strings.EqualFold($1.Value, "die")) {
-                $$ = expr.NewDie($2)
-            } else {
-                $$ = expr.NewExit($2)
+            {
+                $$ = binary.NewCoalesce($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
             }
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+    |   internal_functions_in_yacc
+            { $$ = $1}
+    |   T_INT_CAST expr
+            {
+                $$ = cast.NewInt($2)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_DOUBLE_CAST expr
+            {
+                $$ = cast.NewDouble($2)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_STRING_CAST expr
+            {
+                $$ = cast.NewString($2)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_ARRAY_CAST expr
+            {
+                $$ = cast.NewArray($2)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_OBJECT_CAST expr
+            {
+                $$ = cast.NewObject($2)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_BOOL_CAST expr
+            {
+                $$ = cast.NewBool($2)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_UNSET_CAST expr
+            {
+                $$ = cast.NewUnset($2)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_EXIT exit_expr
+            {
+                if (strings.EqualFold($1.Value, "die")) {
+                    $$ = expr.NewDie($2)
+                } else {
+                    $$ = expr.NewExit($2)
+                }
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   '@' expr
-        {
-            $$ = expr.NewErrorSuppress($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   scalar                                          { $$ = $1; }
+            {
+                $$ = expr.NewErrorSuppress($2)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   scalar
+            { $$ = $1; }
     |   '`' backticks_expr '`'
-        {
-            $$ = expr.NewShellExec($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewShellExec($2)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   T_PRINT expr
-        {
-            $$ = expr.NewPrint($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewPrint($2)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   T_YIELD
-        {
-            $$ = expr.NewYield(nil, nil)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewYield(nil, nil)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   T_YIELD expr
-        {
-            $$ = expr.NewYield(nil, $2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewYield(nil, $2)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   T_YIELD expr T_DOUBLE_ARROW expr
-        {
-            $$ = expr.NewYield($2, $4)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $4))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewYield($2, $4)
+                    
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $4))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($2, $3)
+            }
     |   T_YIELD_FROM expr
-        {
-            $$ = expr.NewYieldFrom($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewYieldFrom($2)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   T_FUNCTION returns_ref backup_doc_comment '(' parameter_list ')' lexical_vars return_type '{' inner_statement_list '}'
             {
                 innerStmtList := stmt.NewInnerStmtList($10)
