@@ -3560,22 +3560,40 @@ expr_without_variable:
 ;
 
 backup_doc_comment:
-	/* empty */ { $$ = yylex.(*Parser).PhpDocComment; yylex.(*Parser).PhpDocComment = "" }
+        /* empty */
+            {
+                $$ = yylex.(*Parser).PhpDocComment
+                yylex.(*Parser).PhpDocComment = ""
+            }
 ;
 
 returns_ref:
-        /* empty */                                     { $$ = nil }
-    |   '&'                                             { $$ = $1 }
+        /* empty */
+            { $$ = nil }
+    |   '&'
+            { $$ = $1 }
 ;
 
 lexical_vars:
-        /* empty */                                     { $$ = []node.Node{} }
-    |   T_USE '(' lexical_var_list ')'                  { $$ = $3; }
+        /* empty */
+            { $$ = []node.Node{} }
+    |   T_USE '(' lexical_var_list ')'
+            {
+                $$ = $3;
+            }
 ;
 
 lexical_var_list:
-        lexical_var_list ',' lexical_var                { $$ = append($1, $3) }
-    |   lexical_var                                     { $$ = []node.Node{$1} }
+        lexical_var_list ',' lexical_var
+            {
+                $$ = append($1, $3)
+
+                // save comments
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(lastNode($1), $2)
+                yylex.(*Parser).addNodeInlineCommentsFromNextNode(lastNode($1), $3)
+            }
+    |   lexical_var
+            { $$ = []node.Node{$1} }
 ;
 
 lexical_var:
