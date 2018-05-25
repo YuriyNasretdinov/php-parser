@@ -81,9 +81,11 @@ var nodesToTest = []struct {
 	},
 	{
 		&expr.ClosureUse{
-			Variable: &expr.Variable{VarName: &node.Identifier{Value: "a"}},
+			Uses: []node.Node{
+				&expr.Variable{VarName: &node.Identifier{Value: "a"}},
+			},
 		},
-		[]string{"Variable"},
+		[]string{"Uses"},
 		map[string]interface{}{},
 	},
 	{
@@ -96,11 +98,11 @@ var nodesToTest = []struct {
 					Parameters: []node.Node{&node.Parameter{}},
 				},
 			},
-			Uses:       []node.Node{&expr.ClosureUse{}},
+			ClosureUse: &expr.ClosureUse{},
 			ReturnType: &name.Name{},
 			StmtList:   &stmt.StmtList{InnerStmtList: &stmt.InnerStmtList{}},
 		},
-		[]string{"ParameterList", "Uses", "ReturnType", "StmtList"},
+		[]string{"ParameterList", "ClosureUse", "ReturnType", "StmtList"},
 		map[string]interface{}{"ReturnsRef": true, "Static": false, "PhpDocComment": ""},
 	},
 	{

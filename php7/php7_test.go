@@ -522,7 +522,6 @@ func TestPhp7(t *testing.T) {
 							Parameters: expectedParams,
 						},
 					},
-					Uses: []node.Node{},
 					StmtList: &stmt.StmtList{
 						InnerStmtList: &stmt.InnerStmtList{
 							Stmts: []node.Node{},
@@ -538,7 +537,6 @@ func TestPhp7(t *testing.T) {
 							Parameters: expectedParams,
 						},
 					},
-					Uses: []node.Node{},
 					StmtList: &stmt.StmtList{
 						InnerStmtList: &stmt.InnerStmtList{
 							Stmts: []node.Node{},
@@ -1873,7 +1871,6 @@ func TestPhp7(t *testing.T) {
 					ParameterList: &node.ParameterList{
 						InnerParameterList: &node.InnerParameterList{},
 					},
-					Uses: []node.Node{},
 					StmtList: &stmt.StmtList{
 						InnerStmtList: &stmt.InnerStmtList{
 							Stmts: []node.Node{},
@@ -1902,12 +1899,10 @@ func TestPhp7(t *testing.T) {
 							},
 						},
 					},
-					Uses: []node.Node{
-						&expr.ClosureUse{
-							Variable: &expr.Variable{VarName: &node.Identifier{Value: "c"}},
-						},
-						&expr.ClosureUse{
-							Variable: &expr.Reference{Variable: &expr.Variable{VarName: &node.Identifier{Value: "d"}}},
+					ClosureUse: &expr.ClosureUse{
+						Uses: []node.Node{
+							&expr.Variable{VarName: &node.Identifier{Value: "c"}},
+							&expr.Reference{Variable: &expr.Variable{VarName: &node.Identifier{Value: "d"}}},
 						},
 					},
 					StmtList: &stmt.StmtList{
@@ -1925,7 +1920,6 @@ func TestPhp7(t *testing.T) {
 					ParameterList: &node.ParameterList{
 						InnerParameterList: &node.InnerParameterList{},
 					},
-					Uses: []node.Node{},
 					ReturnType: &name.Name{
 						Parts: []node.Node{&name.NamePart{Value: "void"}},
 					},

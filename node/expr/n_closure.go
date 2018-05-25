@@ -12,19 +12,19 @@ type Closure struct {
 	Static        bool
 	PhpDocComment string
 	ParameterList *node.ParameterList
-	Uses          []node.Node
+	ClosureUse    *ClosureUse
 	ReturnType    node.Node
 	StmtList      *stmt.StmtList
 }
 
 // NewClosure node constructor
-func NewClosure(ParameterList *node.ParameterList, Uses []node.Node, ReturnType node.Node, StmtList *stmt.StmtList, Static bool, ReturnsRef bool, PhpDocComment string) *Closure {
+func NewClosure(ParameterList *node.ParameterList, ClosureUse *ClosureUse, ReturnType node.Node, StmtList *stmt.StmtList, Static bool, ReturnsRef bool, PhpDocComment string) *Closure {
 	return &Closure{
 		ReturnsRef,
 		Static,
 		PhpDocComment,
 		ParameterList,
-		Uses,
+		ClosureUse,
 		ReturnType,
 		StmtList,
 	}
@@ -51,13 +51,9 @@ func (n *Closure) Walk(v walker.Visitor) {
 		n.ParameterList.Walk(vv)
 	}
 
-	if n.Uses != nil {
-		vv := v.GetChildrenVisitor("Uses")
-		for _, nn := range n.Uses {
-			if nn != nil {
-				nn.Walk(vv)
-			}
-		}
+	if n.ClosureUse != nil {
+		vv := v.GetChildrenVisitor("ClosureUse")
+		n.ClosureUse.Walk(vv)
 	}
 
 	if n.ReturnType != nil {
