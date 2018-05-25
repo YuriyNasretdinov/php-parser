@@ -3583,7 +3583,13 @@ lexical_vars:
             {
                 $$ = expr.NewClosureUse($3)
 
+                // save position
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+                yylex.(*Parser).addNodeCommentsFromToken($$, $2)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(lastNode($3), $4)
             }
 ;
 
@@ -3604,25 +3610,29 @@ lexical_var:
     T_VARIABLE
         {
             identifier := node.NewIdentifier(strings.TrimLeft($1.Value, "$"))
-            yylex.(*Parser).positions.AddPosition(identifier, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
             $$ = expr.NewVariable(identifier)
+
+            // save position
+            yylex.(*Parser).positions.AddPosition(identifier, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
             yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
 
-            yylex.(*Parser).comments.AddComments(identifier, $1.Comments())
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
+            // save comments
+            yylex.(*Parser).addNodeCommentsFromToken($$, $1)
         }
     |   '&' T_VARIABLE
         {
             identifier := node.NewIdentifier(strings.TrimLeft($2.Value, "$"))
-            yylex.(*Parser).positions.AddPosition(identifier, yylex.(*Parser).positionBuilder.NewTokenPosition($2))
             variable := expr.NewVariable(identifier)
-            yylex.(*Parser).positions.AddPosition(variable, yylex.(*Parser).positionBuilder.NewTokenPosition($2))
             $$ = expr.NewReference(variable)
+
+            // save position
+            yylex.(*Parser).positions.AddPosition(identifier, yylex.(*Parser).positionBuilder.NewTokenPosition($2))
+            yylex.(*Parser).positions.AddPosition(variable, yylex.(*Parser).positionBuilder.NewTokenPosition($2))
             yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $2))
 
-            yylex.(*Parser).comments.AddComments(identifier, $2.Comments())
-            yylex.(*Parser).comments.AddComments(variable, $1.Comments())
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
+            // save comments
+            yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            yylex.(*Parser).addNodeCommentsFromToken(variable, $2)
         }
 ;
 
