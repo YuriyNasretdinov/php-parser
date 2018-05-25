@@ -3637,45 +3637,70 @@ lexical_var:
 ;
 
 function_call:
-    name argument_list
-        {
-            $$ = expr.NewFunctionCall($1, $2.(*node.ArgumentList))
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+        name argument_list
+            {
+                $$ = expr.NewFunctionCall($1, $2.(*node.ArgumentList))
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+            }
     |   class_name T_PAAMAYIM_NEKUDOTAYIM member_name argument_list
-        {
-            $$ = expr.NewStaticCall($1, $3, $4.(*node.ArgumentList))
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $4))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewStaticCall($1, $3, $4.(*node.ArgumentList))
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $4))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable_class_name T_PAAMAYIM_NEKUDOTAYIM member_name argument_list
-        {
-            $$ = expr.NewStaticCall($1, $3, $4.(*node.ArgumentList))
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $4))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewStaticCall($1, $3, $4.(*node.ArgumentList))
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $4))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   callable_expr argument_list
-        {
-            $$ = expr.NewFunctionCall($1, $2.(*node.ArgumentList))
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewFunctionCall($1, $2.(*node.ArgumentList))
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+            }
 ;
 
 class_name:
-    T_STATIC
-        {
-            $$ = node.NewIdentifier($1.Value)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   name                                            { $$ = $1; }
+        T_STATIC
+            {
+                $$ = node.NewIdentifier($1.Value)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   name
+            { $$ = $1; }
 ;
 
 class_name_reference:
-        class_name                                      { $$ = $1; }
-    |   new_variable                                    { $$ = $1; }
+        class_name
+            { $$ = $1; }
+    |   new_variable
+            { $$ = $1; }
 ;
 
 exit_expr:
