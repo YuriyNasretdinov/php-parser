@@ -28,6 +28,7 @@ import (
     ClassImplements  *stmt.ClassImplements
     InterfaceExtends *stmt.InterfaceExtends
     ClosureUse       *expr.ClosureUse
+    Exit             *expr.Exit
 }
 
 %type <token> $unk
@@ -251,7 +252,7 @@ import (
 %type <node> absolute_trait_method_reference trait_method_reference property echo_expr
 %type <node> new_expr anonymous_class class_name class_name_reference simple_variable
 %type <node> internal_functions_in_yacc
-%type <node> exit_expr scalar lexical_var function_call member_name property_name
+%type <node> scalar lexical_var function_call member_name property_name
 %type <node> variable_class_name dereferencable_scalar constant dereferencable
 %type <node> callable_expr callable_variable static_member new_variable
 %type <node> encaps_var encaps_var_offset
@@ -273,6 +274,7 @@ import (
 %type <ClassImplements> implements_list
 %type <InterfaceExtends> interface_extends_list
 %type <ClosureUse> lexical_vars
+%type <Exit> exit_expr
 
 %type <node> member_modifier
 %type <node> use_type
@@ -3420,14 +3422,23 @@ expr_without_variable:
             }
     |   T_EXIT exit_expr
             {
-                if (strings.EqualFold($1.Value, "die")) {
-                    $$ = expr.NewDie($2)
+                if $2 == nil {
+                    if (strings.EqualFold($1.Value, "die")) {
+                        $$ = expr.NewDie(nil)
+                    } else {
+                        $$ = expr.NewExit(nil)
+                    }
+
+                    yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
                 } else {
-                    $$ = expr.NewExit($2)
+                    if (strings.EqualFold($1.Value, "die")) {
+                        $$ = expr.NewDie($2.Expr)
+                    } else {
+                        $$ = $2
+                    }
+
+                    yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
                 }
-                
-                // save position
-                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
 
                 // save comments
                 yylex.(*Parser).addNodeCommentsFromToken($$, $1)
@@ -3704,38 +3715,70 @@ class_name_reference:
 ;
 
 exit_expr:
-        /* empty */                                     { $$ = nil }
-    |   '(' optional_expr ')'                           { $$ = $2; }
+        /* empty */
+            { $$ = nil }
+    |   '(' optional_expr ')'
+            {
+                $$ = expr.NewExit($2)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+                if $2 == nil {
+                    yylex.(*Parser).addNodeCommentsFromToken($$, $3)
+                } else {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken($2, $3)
+                }
+            }
 ;
 
 backticks_expr:
-        /* empty */                                     { $$ = []node.Node{} }
-    |   T_ENCAPSED_AND_WHITESPACE                       { $$ = []node.Node{scalar.NewEncapsedStringPart($1.Value)} }
-    |   encaps_list                                     { $$ = $1; }
+        /* empty */
+            { $$ = []node.Node{} }
+    |   T_ENCAPSED_AND_WHITESPACE
+            { $$ = []node.Node{scalar.NewEncapsedStringPart($1.Value)} }
+    |   encaps_list
+            { $$ = $1; }
 ;
 
 ctor_arguments:
-        /* empty */	                                    { $$ = nil }
-    |   argument_list                                   { $$ = $1 }
+        /* empty */
+            { $$ = nil }
+    |   argument_list
+            { $$ = $1 }
 ;
 
 dereferencable_scalar:
     T_ARRAY '(' array_pair_list ')'
         {
             $$ = expr.NewArray($3)
+
+            // save position
             yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
+
+            // save comments
             yylex.(*Parser).comments.AddComments($$, $1.Comments())
         }
     |   '[' array_pair_list ']'
         {
             $$ = expr.NewShortArray($2)
+
+            // save position
             yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $3))
+
+            // save comments
             yylex.(*Parser).comments.AddComments($$, $1.Comments())
         }
     |   T_CONSTANT_ENCAPSED_STRING
         {
             $$ = scalar.NewString($1.Value)
+
+            // save position
             yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+            // save comments
             yylex.(*Parser).comments.AddComments($$, $1.Comments())
         }
 ;
