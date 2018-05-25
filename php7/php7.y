@@ -3751,162 +3751,238 @@ ctor_arguments:
 ;
 
 dereferencable_scalar:
-    T_ARRAY '(' array_pair_list ')'
-        {
-            $$ = expr.NewArray($3)
+        T_ARRAY '(' array_pair_list ')'
+            {
+                $$ = expr.NewArray($3)
 
-            // save position
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
 
-            // save comments
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+                yylex.(*Parser).addNodeCommentsFromToken($$, $2)
+
+                if len($3) > 0 {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken(lastNode($3), $4)
+                } else {
+                    yylex.(*Parser).addNodeCommentsFromToken($$, $4)
+                }
+            }
     |   '[' array_pair_list ']'
-        {
-            $$ = expr.NewShortArray($2)
+            {
+                $$ = expr.NewShortArray($2)
 
-            // save position
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $3))
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $3))
 
-            // save comments
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+                if len($2) > 0 {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken(lastNode($2), $3)
+                } else {
+                    yylex.(*Parser).addNodeCommentsFromToken($$, $3)
+                }
+            }
     |   T_CONSTANT_ENCAPSED_STRING
-        {
-            $$ = scalar.NewString($1.Value)
+            {
+                $$ = scalar.NewString($1.Value)
 
-            // save position
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
 
-            // save comments
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
 ;
 
 scalar:
-    T_LNUMBER
-        {
-            $$ = scalar.NewLnumber($1.Value)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_DNUMBER
-        {
-            $$ = scalar.NewDnumber($1.Value)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_LINE
-        {
-            $$ = scalar.NewMagicConstant($1.Value)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_FILE
-        {
-            $$ = scalar.NewMagicConstant($1.Value)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_DIR
-        {
-            $$ = scalar.NewMagicConstant($1.Value)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_TRAIT_C
-        {
-            $$ = scalar.NewMagicConstant($1.Value)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_METHOD_C
-        {
-            $$ = scalar.NewMagicConstant($1.Value)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_FUNC_C
-        {
-            $$ = scalar.NewMagicConstant($1.Value)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_NS_C
-        {
-            $$ = scalar.NewMagicConstant($1.Value)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_CLASS_C
-        {
-            $$ = scalar.NewMagicConstant($1.Value)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   T_START_HEREDOC T_ENCAPSED_AND_WHITESPACE T_END_HEREDOC 
-        {
-            encapsed := scalar.NewEncapsedStringPart($2.Value)
-            yylex.(*Parser).positions.AddPosition(encapsed, yylex.(*Parser).positionBuilder.NewTokenPosition($2))
-            yylex.(*Parser).comments.AddComments(encapsed, $2.Comments())
+        T_LNUMBER
+            {
+                $$ = scalar.NewLnumber($1.Value)
 
-            $$ = scalar.NewHeredoc($1.Value, []node.Node{encapsed})
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_DNUMBER
+            {
+                $$ = scalar.NewDnumber($1.Value)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_LINE
+            {
+                $$ = scalar.NewMagicConstant($1.Value)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_FILE
+            {
+                $$ = scalar.NewMagicConstant($1.Value)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_DIR
+            {
+                $$ = scalar.NewMagicConstant($1.Value)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_TRAIT_C
+            {
+                $$ = scalar.NewMagicConstant($1.Value)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_METHOD_C
+            {
+                $$ = scalar.NewMagicConstant($1.Value)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_FUNC_C
+            {
+                $$ = scalar.NewMagicConstant($1.Value)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_NS_C
+            {
+                $$ = scalar.NewMagicConstant($1.Value)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_CLASS_C
+            {
+                $$ = scalar.NewMagicConstant($1.Value)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   T_START_HEREDOC T_ENCAPSED_AND_WHITESPACE T_END_HEREDOC 
+            {
+                encapsed := scalar.NewEncapsedStringPart($2.Value)
+                $$ = scalar.NewHeredoc($1.Value, []node.Node{encapsed})
+
+                // save position
+                yylex.(*Parser).positions.AddPosition(encapsed, yylex.(*Parser).positionBuilder.NewTokenPosition($2))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   T_START_HEREDOC T_END_HEREDOC
-        {
-            $$ = scalar.NewHeredoc($1.Value, nil)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = scalar.NewHeredoc($1.Value, nil)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   '"' encaps_list '"'
-        {
-            $$ = scalar.NewEncapsed($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = scalar.NewEncapsed($2)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   T_START_HEREDOC encaps_list T_END_HEREDOC
-        {
-            $$ = scalar.NewHeredoc($1.Value, $2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   dereferencable_scalar                           { $$ = $1; }
-    |   constant                                        { $$ = $1; }
+            {
+                $$ = scalar.NewHeredoc($1.Value, $2)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   dereferencable_scalar
+            { $$ = $1; }
+    |   constant
+            { $$ = $1; }
 ;
 
 constant:
-    name
-        {
-            $$ = expr.NewConstFetch($1)
+        name
+            {
+                $$ = expr.NewConstFetch($1)
 
-            // save position
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodePosition($1))
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodePosition($1))
 
-            // save comments
-            yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
-        }
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+            }
     |   class_name T_PAAMAYIM_NEKUDOTAYIM identifier
-        {
-            target := node.NewIdentifier($3.Value)
-            yylex.(*Parser).positions.AddPosition(target, yylex.(*Parser).positionBuilder.NewTokenPosition($3))
-            $$ = expr.NewClassConstFetch($1, target)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $3))
+            {
+                target := node.NewIdentifier($3.Value)
+                $$ = expr.NewClassConstFetch($1, target)
 
-            yylex.(*Parser).comments.AddComments(target, $3.Comments())
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+                // save position
+                yylex.(*Parser).positions.AddPosition(target, yylex.(*Parser).positionBuilder.NewTokenPosition($3))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                yylex.(*Parser).addNodeCommentsFromToken(target, $3)
+            }
     |   variable_class_name T_PAAMAYIM_NEKUDOTAYIM identifier
-        {
-            target := node.NewIdentifier($3.Value)
-            yylex.(*Parser).positions.AddPosition(target, yylex.(*Parser).positionBuilder.NewTokenPosition($3))
-            $$ = expr.NewClassConstFetch($1, target)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $3))
+            {
+                target := node.NewIdentifier($3.Value)
+                $$ = expr.NewClassConstFetch($1, target)
 
-            yylex.(*Parser).comments.AddComments(target, $3.Comments())
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+                // save position
+                yylex.(*Parser).positions.AddPosition(target, yylex.(*Parser).positionBuilder.NewTokenPosition($3))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                yylex.(*Parser).addNodeCommentsFromToken(target, $3)
+            }
 ;
 
 expr:
