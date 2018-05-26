@@ -4152,160 +4152,283 @@ simple_variable:
 ;
 
 static_member:
-    class_name T_PAAMAYIM_NEKUDOTAYIM simple_variable
-        {
-            $$ = expr.NewStaticPropertyFetch($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+        class_name T_PAAMAYIM_NEKUDOTAYIM simple_variable
+            {
+                $$ = expr.NewStaticPropertyFetch($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   variable_class_name T_PAAMAYIM_NEKUDOTAYIM simple_variable
-        {
-            $$ = expr.NewStaticPropertyFetch($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewStaticPropertyFetch($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+                
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
 ;
 
 new_variable:
-        simple_variable                                 { $$ = $1 }
+        simple_variable
+            { $$ = $1 }
     |   new_variable '[' optional_expr ']'
-        {
-            $$ = expr.NewArrayDimFetch($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $4))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewArrayDimFetch($1, $3)
+
+                // save postion
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $4))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                if $3 == nil {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $4)
+                } else {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken($3, $4)
+                }
+            }
     |   new_variable '{' expr '}'
-        {
-            $$ = expr.NewArrayDimFetch($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $4))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewArrayDimFetch($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $4))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($3, $4)
+            }
     |   new_variable T_OBJECT_OPERATOR property_name
-        {
-            $$ = expr.NewPropertyFetch($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewPropertyFetch($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   class_name T_PAAMAYIM_NEKUDOTAYIM simple_variable
             {
                 $$ = expr.NewStaticPropertyFetch($1, $3)
+
+                // save position
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-                yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
             }
     |   new_variable T_PAAMAYIM_NEKUDOTAYIM simple_variable
             {
                 $$ = expr.NewStaticPropertyFetch($1, $3)
+
+                // save position
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-                yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
             }
 ;
 
 member_name:
-    identifier
-        {
-            $$ = node.NewIdentifier($1.Value)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   '{' expr '}'                                    { $$ = $2; }
-    |   simple_variable                                 { $$ = $1 }
+        identifier
+            {
+                $$ = node.NewIdentifier($1.Value)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   '{' expr '}'
+            {
+                $$ = $2;
+
+                // save comments
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($2, $3)
+                yylex.(*Parser).addNodeCommentsFromToken($2, $1)
+            }
+    |   simple_variable
+            { $$ = $1 }
 ;
 
 property_name:
-    T_STRING
-        {
-            $$ = node.NewIdentifier($1.Value)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
-    |   '{' expr '}'                                    { $$ = $2; }
-    |   simple_variable                                 { $$ = $1 }
+        T_STRING
+            {
+                $$ = node.NewIdentifier($1.Value)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   '{' expr '}'
+            {
+                $$ = $2;
+
+                // save comments
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($2, $3)
+                yylex.(*Parser).addNodeCommentsFromToken($2, $1)
+            }
+    |   simple_variable
+            { $$ = $1 }
 ;
 
 array_pair_list:
-    non_empty_array_pair_list
-        {
-            if ($1[len($1)-1] == nil) {
-                $$ = $1[:len($1)-1]
-            } else {
-                $$ = $1
+        non_empty_array_pair_list
+            {
+                if ($1[len($1)-1] == nil) {
+                    $$ = $1[:len($1)-1]
+                } else {
+                    $$ = $1
+                }
             }
-        }
 ;
 
 possible_array_pair:
-        /* empty */                                     { $$ = nil }
-    |   array_pair                                      { $$ = $1; }
+        /* empty */
+            { $$ = nil }
+    |   array_pair
+            { $$ = $1; }
 ;
 
 non_empty_array_pair_list:
         non_empty_array_pair_list ',' possible_array_pair
-                                                        { $$ = append($1, $3) }
-    |   possible_array_pair                             { $$ = []node.Node{$1} }
+            {
+                $$ = append($1, $3)
+
+                // save comments
+                yylex.(*Parser).addNodeAllCommentsFromNextToken(lastNode($1), $2)
+                yylex.(*Parser).addNodeInlineCommentsFromNextNode(lastNode($1), $3)
+            }
+    |   possible_array_pair
+            { $$ = []node.Node{$1} }
 ;
 
 array_pair:
-    expr T_DOUBLE_ARROW expr
-        {
-            $$ = expr.NewArrayItem($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+        expr T_DOUBLE_ARROW expr
+            {
+                $$ = expr.NewArrayItem($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
     |   expr
-        {
-            $$ = expr.NewArrayItem(nil, $1)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodePosition($1))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewArrayItem(nil, $1)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodePosition($1))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+            }
     |   expr T_DOUBLE_ARROW '&' variable
-        {
-            reference := expr.NewReference($4)
-            $$ = expr.NewArrayItem($1, reference)
-            yylex.(*Parser).positions.AddPosition(reference, yylex.(*Parser).positionBuilder.NewTokenNodePosition($3, $4))
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $4))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                reference := expr.NewReference($4)
+                $$ = expr.NewArrayItem($1, reference)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition(reference, yylex.(*Parser).positionBuilder.NewTokenNodePosition($3, $4))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $4))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                yylex.(*Parser).addNodeCommentsFromToken(reference, $3)
+            }
     |   '&' variable
-        {
-            reference := expr.NewReference($2)
-            $$ = expr.NewArrayItem(nil, reference)
-            yylex.(*Parser).positions.AddPosition(reference, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                reference := expr.NewReference($2)
+                $$ = expr.NewArrayItem(nil, reference)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition(reference, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   expr T_DOUBLE_ARROW T_LIST '(' array_pair_list ')'
             {
                 // TODO: Cannot use list() as standalone expression
                 list := expr.NewList($5)
-                yylex.(*Parser).positions.AddPosition(list, yylex.(*Parser).positionBuilder.NewTokensPosition($3, $6))
                 $$ = expr.NewArrayItem($1, list)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition(list, yylex.(*Parser).positionBuilder.NewTokensPosition($3, $6))
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $6))
 
-                yylex.(*Parser).comments.AddComments(list, $3.Comments())
-                yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $3)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $4)
+                if len($5) > 0 {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken(lastNode($5), $6)
+                } else {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $6)
+                }
             }
     |   T_LIST '(' array_pair_list ')'
             {
                 // TODO: Cannot use list() as standalone expression
                 list := expr.NewList($3)
-                yylex.(*Parser).positions.AddPosition(list, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
                 $$ = expr.NewArrayItem(nil, list)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition(list, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
                 yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
                 
-                yylex.(*Parser).comments.AddComments(list, $1.Comments())
-                yylex.(*Parser).comments.AddComments($$, $1.Comments())
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+                yylex.(*Parser).addNodeCommentsFromToken($$, $2)
+                if len($3) > 0 {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken(lastNode($3), $4)
+                } else {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken($$, $4)
+                }
             }
 ;
 
 encaps_list:
-        encaps_list encaps_var                          { $$ = append($1, $2) }
+        encaps_list encaps_var
+            {
+                $$ = append($1, $2)
+
+                // save comments
+                if len($1) > 0 { yylex.(*Parser).addNodeInlineCommentsFromNextNode(lastNode($1), $2) }
+            }
     |   encaps_list T_ENCAPSED_AND_WHITESPACE
-        {
-            encapsed := scalar.NewEncapsedStringPart($2.Value)
-            yylex.(*Parser).positions.AddPosition(encapsed, yylex.(*Parser).positionBuilder.NewTokenPosition($2))
-            $$ = append($1, encapsed)
-            yylex.(*Parser).comments.AddComments(encapsed, $2.Comments())
-        }
+            {
+                encapsed := scalar.NewEncapsedStringPart($2.Value)
+                $$ = append($1, encapsed)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition(encapsed, yylex.(*Parser).positionBuilder.NewTokenPosition($2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken(encapsed, $2)
+                if len($1) > 0 { yylex.(*Parser).addNodeInlineCommentsFromNextNode(lastNode($1), encapsed) }
+            }
     |   encaps_var                                      { $$ = []node.Node{$1} }
     |   T_ENCAPSED_AND_WHITESPACE encaps_var
         {
