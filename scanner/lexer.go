@@ -510,7 +510,7 @@ func (l *Lexer) getCurrentState() int {
 	return l.StateStack[len(l.StateStack)-1]
 }
 
-func (l *Lexer) newToken(chars []lex.Char) *Token {
+func (l *Lexer) newToken(chars []lex.Char, tokenName string) *Token {
 	firstChar := chars[0]
 	lastChar := chars[len(chars)-1]
 
@@ -520,6 +520,10 @@ func (l *Lexer) newToken(chars []lex.Char) *Token {
 		int(firstChar.Pos()),
 		int(lastChar.Pos()),
 	)
+
+	for _, c := range l.Comments {
+		c.SetTokenName(tokenName)
+	}
 
 	return NewToken(l.charsToBytes(chars), pos).SetComments(l.Comments)
 }
@@ -535,7 +539,7 @@ func (l *Lexer) addComment(chars []lex.Char) {
 		int(lastChar.Pos()),
 	)
 
-	c := comment.NewComment(string(l.charsToBytes(chars)), pos)
+	c := comment.NewComment(string(l.charsToBytes(chars)), pos, "")
 	l.Comments = append(l.Comments, c)
 }
 

@@ -1689,11 +1689,11 @@ yystate122:
 
 yystate123:
 	c = l.Next()
-	yyrule = 7
+	yyrule = 8
 	l.Mark()
 	switch {
 	default:
-		goto yyrule7
+		goto yyrule8
 	case c == '\n':
 		goto yystate124
 	case c == '\r':
@@ -1702,17 +1702,17 @@ yystate123:
 
 yystate124:
 	c = l.Next()
-	yyrule = 7
+	yyrule = 8
 	l.Mark()
-	goto yyrule7
+	goto yyrule8
 
 yystate125:
 	c = l.Next()
-	yyrule = 7
+	yyrule = 8
 	l.Mark()
 	switch {
 	default:
-		goto yyrule7
+		goto yyrule8
 	case c == '\n':
 		goto yystate124
 	}
@@ -1957,11 +1957,11 @@ yystate149:
 
 yystate150:
 	c = l.Next()
-	yyrule = 8
+	yyrule = 7
 	l.Mark()
 	switch {
 	default:
-		goto yyrule8
+		goto yyrule7
 	case c == '\n':
 		goto yystate151
 	case c == '\r':
@@ -1970,17 +1970,17 @@ yystate150:
 
 yystate151:
 	c = l.Next()
-	yyrule = 8
+	yyrule = 7
 	l.Mark()
-	goto yyrule8
+	goto yyrule7
 
 yystate152:
 	c = l.Next()
-	yyrule = 8
+	yyrule = 7
 	l.Mark()
 	switch {
 	default:
-		goto yyrule8
+		goto yyrule7
 	case c == '\n':
 		goto yystate151
 	}
@@ -7515,7 +7515,7 @@ yyrule2: // .
 			}
 			c = l.Next()
 		}
-		lval.Token(l.newToken(tb))
+		lval.Token(l.newToken(tb, "T_INLINE_HTML"))
 		return T_INLINE_HTML
 	}
 yyrule3: // \<\?php([ \t]|{NEW_LINE})
@@ -7531,30 +7531,30 @@ yyrule4: // \<\?
 yyrule5: // \<\?=
 	{
 		l.begin(PHP)
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ECHO"))
 		return T_ECHO
 		goto yystate0
 	}
 yyrule6: // [ \t\n\r]+
 
 	goto yystate0
-yyrule7: // [;][ \t\n\r]*\?\>{NEW_LINE}?
+yyrule7: // \?\>{NEW_LINE}?
 	{
 		l.begin(INITIAL)
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), ";"))
 		return Rune2Class(';')
 		goto yystate0
 	}
-yyrule8: // \?\>{NEW_LINE}?
+yyrule8: // [;][ \t\n\r]*\?\>{NEW_LINE}?
 	{
 		l.begin(INITIAL)
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), ";"))
 		return Rune2Class(';')
 		goto yystate0
 	}
 yyrule9: // {DNUM}|{EXPONENT_DNUM}
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_DNUMBER"))
 		return T_DNUMBER
 		goto yystate0
 	}
@@ -7576,10 +7576,10 @@ yyrule10: // {BNUM}
 			}
 		}
 		if len(tb)-i < 64 {
-			lval.Token(l.newToken(l.Token()))
+			lval.Token(l.newToken(l.Token(), "T_LNUMBER"))
 			return T_LNUMBER
 		} else {
-			lval.Token(l.newToken(l.Token()))
+			lval.Token(l.newToken(l.Token(), "T_DNUMBER"))
 			return T_DNUMBER
 		}
 		goto yystate0
@@ -7588,10 +7588,10 @@ yyrule11: // {LNUM}
 	{
 
 		if len(l.Token()) < 20 {
-			lval.Token(l.newToken(l.Token()))
+			lval.Token(l.newToken(l.Token(), "T_LNUMBER"))
 			return T_LNUMBER
 		} else {
-			lval.Token(l.newToken(l.Token()))
+			lval.Token(l.newToken(l.Token(), "T_DNUMBER"))
 			return T_DNUMBER
 		}
 		goto yystate0
@@ -7615,689 +7615,689 @@ yyrule12: // {HNUM}
 		}
 		length := len(tb) - i
 		if length < 16 || (length == 16 && tb[i].Rune <= '7') {
-			lval.Token(l.newToken(l.Token()))
+			lval.Token(l.newToken(l.Token(), "T_LNUMBER"))
 			return T_LNUMBER
 		} else {
-			lval.Token(l.newToken(l.Token()))
+			lval.Token(l.newToken(l.Token(), "T_DNUMBER"))
 			return T_DNUMBER
 		}
 		goto yystate0
 	}
 yyrule13: // abstract
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ABSTRACT"))
 		return T_ABSTRACT
 		goto yystate0
 	}
 yyrule14: // array
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ARRAY"))
 		return T_ARRAY
 		goto yystate0
 	}
 yyrule15: // as
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_AS"))
 		return T_AS
 		goto yystate0
 	}
 yyrule16: // break
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_BREAK"))
 		return T_BREAK
 		goto yystate0
 	}
 yyrule17: // callable
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_CALLABLE"))
 		return T_CALLABLE
 		goto yystate0
 	}
 yyrule18: // case
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_CASE"))
 		return T_CASE
 		goto yystate0
 	}
 yyrule19: // catch
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_CATCH"))
 		return T_CATCH
 		goto yystate0
 	}
 yyrule20: // class
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_CLASS"))
 		return T_CLASS
 		goto yystate0
 	}
 yyrule21: // clone
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_CLONE"))
 		return T_CLONE
 		goto yystate0
 	}
 yyrule22: // const
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_CONST"))
 		return T_CONST
 		goto yystate0
 	}
 yyrule23: // continue
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_CONTINUE"))
 		return T_CONTINUE
 		goto yystate0
 	}
 yyrule24: // declare
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_DECLARE"))
 		return T_DECLARE
 		goto yystate0
 	}
 yyrule25: // default
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_DEFAULT"))
 		return T_DEFAULT
 		goto yystate0
 	}
 yyrule26: // do
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_DO"))
 		return T_DO
 		goto yystate0
 	}
 yyrule27: // echo
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ECHO"))
 		return T_ECHO
 		goto yystate0
 	}
 yyrule28: // else
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ELSE"))
 		return T_ELSE
 		goto yystate0
 	}
 yyrule29: // elseif
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ELSEIF"))
 		return T_ELSEIF
 		goto yystate0
 	}
 yyrule30: // empty
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_EMPTY"))
 		return T_EMPTY
 		goto yystate0
 	}
 yyrule31: // enddeclare
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ENDDECLARE"))
 		return T_ENDDECLARE
 		goto yystate0
 	}
 yyrule32: // endfor
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ENDFOR"))
 		return T_ENDFOR
 		goto yystate0
 	}
 yyrule33: // endforeach
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ENDFOREACH"))
 		return T_ENDFOREACH
 		goto yystate0
 	}
 yyrule34: // endif
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ENDIF"))
 		return T_ENDIF
 		goto yystate0
 	}
 yyrule35: // endswitch
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ENDSWITCH"))
 		return T_ENDSWITCH
 		goto yystate0
 	}
 yyrule36: // endwhile
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ENDWHILE"))
 		return T_ENDWHILE
 		goto yystate0
 	}
 yyrule37: // eval
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_EVAL"))
 		return T_EVAL
 		goto yystate0
 	}
 yyrule38: // exit|die
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_EXIT"))
 		return T_EXIT
 		goto yystate0
 	}
 yyrule39: // extends
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_EXTENDS"))
 		return T_EXTENDS
 		goto yystate0
 	}
 yyrule40: // final
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_FINAL"))
 		return T_FINAL
 		goto yystate0
 	}
 yyrule41: // finally
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_FINALLY"))
 		return T_FINALLY
 		goto yystate0
 	}
 yyrule42: // for
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_FOR"))
 		return T_FOR
 		goto yystate0
 	}
 yyrule43: // foreach
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_FOREACH"))
 		return T_FOREACH
 		goto yystate0
 	}
 yyrule44: // function|cfunction
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_FUNCTION"))
 		return T_FUNCTION
 		goto yystate0
 	}
 yyrule45: // global
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_GLOBAL"))
 		return T_GLOBAL
 		goto yystate0
 	}
 yyrule46: // goto
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_GOTO"))
 		return T_GOTO
 		goto yystate0
 	}
 yyrule47: // if
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_IF"))
 		return T_IF
 		goto yystate0
 	}
 yyrule48: // isset
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ISSET"))
 		return T_ISSET
 		goto yystate0
 	}
 yyrule49: // implements
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_IMPLEMENTS"))
 		return T_IMPLEMENTS
 		goto yystate0
 	}
 yyrule50: // instanceof
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_INSTANCEOF"))
 		return T_INSTANCEOF
 		goto yystate0
 	}
 yyrule51: // insteadof
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_INSTEADOF"))
 		return T_INSTEADOF
 		goto yystate0
 	}
 yyrule52: // interface
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_INTERFACE"))
 		return T_INTERFACE
 		goto yystate0
 	}
 yyrule53: // list
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_LIST"))
 		return T_LIST
 		goto yystate0
 	}
 yyrule54: // namespace
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_NAMESPACE"))
 		return T_NAMESPACE
 		goto yystate0
 	}
 yyrule55: // private
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_PRIVATE"))
 		return T_PRIVATE
 		goto yystate0
 	}
 yyrule56: // public
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_PUBLIC"))
 		return T_PUBLIC
 		goto yystate0
 	}
 yyrule57: // print
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_PRINT"))
 		return T_PRINT
 		goto yystate0
 	}
 yyrule58: // protected
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_PROTECTED"))
 		return T_PROTECTED
 		goto yystate0
 	}
 yyrule59: // return
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_RETURN"))
 		return T_RETURN
 		goto yystate0
 	}
 yyrule60: // static
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_STATIC"))
 		return T_STATIC
 		goto yystate0
 	}
 yyrule61: // switch
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_SWITCH"))
 		return T_SWITCH
 		goto yystate0
 	}
 yyrule62: // throw
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_THROW"))
 		return T_THROW
 		goto yystate0
 	}
 yyrule63: // trait
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_TRAIT"))
 		return T_TRAIT
 		goto yystate0
 	}
 yyrule64: // try
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_TRY"))
 		return T_TRY
 		goto yystate0
 	}
 yyrule65: // unset
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_UNSET"))
 		return T_UNSET
 		goto yystate0
 	}
 yyrule66: // use
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_USE"))
 		return T_USE
 		goto yystate0
 	}
 yyrule67: // var
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_VAR"))
 		return T_VAR
 		goto yystate0
 	}
 yyrule68: // while
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_WHILE"))
 		return T_WHILE
 		goto yystate0
 	}
 yyrule69: // yield[ \t\n\r]+from[^a-zA-Z0-9_\x80-\xff]
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_YIELD_FROM"))
 		return T_YIELD_FROM
 		goto yystate0
 	}
 yyrule70: // yield
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_YIELD"))
 		return T_YIELD
 		goto yystate0
 	}
 yyrule71: // include
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_INCLUDE"))
 		return T_INCLUDE
 		goto yystate0
 	}
 yyrule72: // include_once
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_INCLUDE_ONCE"))
 		return T_INCLUDE_ONCE
 		goto yystate0
 	}
 yyrule73: // require
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_REQUIRE"))
 		return T_REQUIRE
 		goto yystate0
 	}
 yyrule74: // require_once
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_REQUIRE_ONCE"))
 		return T_REQUIRE_ONCE
 		goto yystate0
 	}
 yyrule75: // __CLASS__
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_CLASS_C"))
 		return T_CLASS_C
 		goto yystate0
 	}
 yyrule76: // __DIR__
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_DIR"))
 		return T_DIR
 		goto yystate0
 	}
 yyrule77: // __FILE__
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_FILE"))
 		return T_FILE
 		goto yystate0
 	}
 yyrule78: // __FUNCTION__
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_FUNC_C"))
 		return T_FUNC_C
 		goto yystate0
 	}
 yyrule79: // __LINE__
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_LINE"))
 		return T_LINE
 		goto yystate0
 	}
 yyrule80: // __NAMESPACE__
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_NS_C"))
 		return T_NS_C
 		goto yystate0
 	}
 yyrule81: // __METHOD__
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_METHOD_C"))
 		return T_METHOD_C
 		goto yystate0
 	}
 yyrule82: // __TRAIT__
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_TRAIT_C"))
 		return T_TRAIT_C
 		goto yystate0
 	}
 yyrule83: // __halt_compiler
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_HALT_COMPILER"))
 		return T_HALT_COMPILER
 		goto yystate0
 	}
 yyrule84: // \([ \t]*array[ \t]*\)
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ARRAY_CAST"))
 		return T_ARRAY_CAST
 		goto yystate0
 	}
 yyrule85: // \([ \t]*(bool|boolean)[ \t]*\)
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_BOOL_CAST"))
 		return T_BOOL_CAST
 		goto yystate0
 	}
 yyrule86: // \([ \t]*(real|double|float)[ \t]*\)
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_DOUBLE_CAST"))
 		return T_DOUBLE_CAST
 		goto yystate0
 	}
 yyrule87: // \([ \t]*(int|integer)[ \t]*\)
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_INT_CAST"))
 		return T_INT_CAST
 		goto yystate0
 	}
 yyrule88: // \([ \t]*object[ \t]*\)
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_OBJECT_CAST"))
 		return T_OBJECT_CAST
 		goto yystate0
 	}
 yyrule89: // \([ \t]*string[ \t]*\)
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_STRING_CAST"))
 		return T_STRING_CAST
 		goto yystate0
 	}
 yyrule90: // \([ \t]*unset[ \t]*\)
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_UNSET_CAST"))
 		return T_UNSET_CAST
 		goto yystate0
 	}
 yyrule91: // new
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_NEW"))
 		return T_NEW
 		goto yystate0
 	}
 yyrule92: // and
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_LOGICAL_AND"))
 		return T_LOGICAL_AND
 		goto yystate0
 	}
 yyrule93: // or
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_LOGICAL_OR"))
 		return T_LOGICAL_OR
 		goto yystate0
 	}
 yyrule94: // xor
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_LOGICAL_XOR"))
 		return T_LOGICAL_XOR
 		goto yystate0
 	}
 yyrule95: // \\
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_NS_SEPARATOR"))
 		return T_NS_SEPARATOR
 		goto yystate0
 	}
 yyrule96: // \.\.\.
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ELLIPSIS"))
 		return T_ELLIPSIS
 		goto yystate0
 	}
 yyrule97: // ::
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_PAAMAYIM_NEKUDOTAYIM"))
 		return T_PAAMAYIM_NEKUDOTAYIM // T_DOUBLE_COLON
 		goto yystate0
 	}
 yyrule98: // &&
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_BOOLEAN_AND"))
 		return T_BOOLEAN_AND
 		goto yystate0
 	}
 yyrule99: // \|\|
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_BOOLEAN_OR"))
 		return T_BOOLEAN_OR
 		goto yystate0
 	}
 yyrule100: // &=
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_AND_EQUAL"))
 		return T_AND_EQUAL
 		goto yystate0
 	}
 yyrule101: // \|=
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_OR_EQUAL"))
 		return T_OR_EQUAL
 		goto yystate0
 	}
 yyrule102: // \.=
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_CONCAT_EQUAL"))
 		return T_CONCAT_EQUAL
 		goto yystate0
 	}
 yyrule103: // \*=
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_MUL_EQUAL"))
 		return T_MUL_EQUAL
 		goto yystate0
 	}
 yyrule104: // \*\*=
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_POW_EQUAL"))
 		return T_POW_EQUAL
 		goto yystate0
 	}
 yyrule105: // [/]=
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_DIV_EQUAL"))
 		return T_DIV_EQUAL
 		goto yystate0
 	}
 yyrule106: // \+=
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_PLUS_EQUAL"))
 		return T_PLUS_EQUAL
 		goto yystate0
 	}
 yyrule107: // -=
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_MINUS_EQUAL"))
 		return T_MINUS_EQUAL
 		goto yystate0
 	}
 yyrule108: // \^=
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_XOR_EQUAL"))
 		return T_XOR_EQUAL
 		goto yystate0
 	}
 yyrule109: // %=
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_MOD_EQUAL"))
 		return T_MOD_EQUAL
 		goto yystate0
 	}
 yyrule110: // --
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_DEC"))
 		return T_DEC
 		goto yystate0
 	}
 yyrule111: // \+\+
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_INC"))
 		return T_INC
 		goto yystate0
 	}
 yyrule112: // =>
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_DOUBLE_ARROW"))
 		return T_DOUBLE_ARROW
 		goto yystate0
 	}
 yyrule113: // \<=\>
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_SPACESHIP"))
 		return T_SPACESHIP
 		goto yystate0
 	}
 yyrule114: // \!=|\<\>
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_IS_NOT_EQUAL"))
 		return T_IS_NOT_EQUAL
 		goto yystate0
 	}
 yyrule115: // \!==
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_IS_NOT_IDENTICAL"))
 		return T_IS_NOT_IDENTICAL
 		goto yystate0
 	}
 yyrule116: // ==
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_IS_EQUAL"))
 		return T_IS_EQUAL
 		goto yystate0
 	}
 yyrule117: // ===
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_IS_IDENTICAL"))
 		return T_IS_IDENTICAL
 		goto yystate0
 	}
 yyrule118: // \<\<=
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_SL_EQUAL"))
 		return T_SL_EQUAL
 		goto yystate0
 	}
 yyrule119: // \>\>=
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_SR_EQUAL"))
 		return T_SR_EQUAL
 		goto yystate0
 	}
 yyrule120: // \>=
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_IS_GREATER_OR_EQUAL"))
 		return T_IS_GREATER_OR_EQUAL
 		goto yystate0
 	}
 yyrule121: // \<=
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_IS_SMALLER_OR_EQUAL"))
 		return T_IS_SMALLER_OR_EQUAL
 		goto yystate0
 	}
 yyrule122: // \*\*
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_POW"))
 		return T_POW
 		goto yystate0
 	}
 yyrule123: // \<\<
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_SL"))
 		return T_SL
 		goto yystate0
 	}
 yyrule124: // \>\>
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_SR"))
 		return T_SR
 		goto yystate0
 	}
 yyrule125: // \?\?
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_COALESCE"))
 		return T_COALESCE
 		goto yystate0
 	}
@@ -8364,41 +8364,41 @@ yyrule127: // ([/][*])|([/][*][*])
 	}
 yyrule128: // {OPERATORS}
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), string(rune(l.TokenBytes(nil)[0]))))
 		return Rune2Class(rune(l.TokenBytes(nil)[0]))
 		goto yystate0
 	}
 yyrule129: // \{
 	{
 		l.pushState(PHP)
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "{"))
 		return Rune2Class(rune(l.TokenBytes(nil)[0]))
 		goto yystate0
 	}
 yyrule130: // \}
 	{
 		l.popState()
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "}"))
 		return Rune2Class(rune(l.TokenBytes(nil)[0]))
 		l.PhpDocComment = ""
 		goto yystate0
 	}
 yyrule131: // \${VAR_NAME}
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_VARIABLE"))
 		return T_VARIABLE
 		goto yystate0
 	}
 yyrule132: // {VAR_NAME}
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_STRING"))
 		return T_STRING
 		goto yystate0
 	}
 yyrule133: // ->
 	{
 		l.begin(PROPERTY)
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_OBJECT_OPERATOR"))
 		return T_OBJECT_OPERATOR
 		goto yystate0
 	}
@@ -8407,14 +8407,14 @@ yyrule134: // [ \t\n\r]+
 	goto yystate0
 yyrule135: // ->
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_OBJECT_OPERATOR"))
 		return T_OBJECT_OPERATOR
 		goto yystate0
 	}
 yyrule136: // {VAR_NAME}
 	{
 		l.begin(PHP)
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_STRING"))
 		return T_STRING
 		goto yystate0
 	}
@@ -8426,21 +8426,21 @@ yyrule137: // .
 	}
 yyrule138: // [\']([^\\\']*([\\].)*)*[\']
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_CONSTANT_ENCAPSED_STRING"))
 		return T_CONSTANT_ENCAPSED_STRING
 		goto yystate0
 	}
 yyrule139: // `
 	{
 		l.begin(BACKQUOTE)
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "`"))
 		return Rune2Class(rune(l.TokenBytes(nil)[0]))
 		goto yystate0
 	}
 yyrule140: // `
 	{
 		l.begin(PHP)
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "`"))
 		return Rune2Class(rune(l.TokenBytes(nil)[0]))
 		goto yystate0
 	}
@@ -8499,7 +8499,7 @@ yyrule141: // [b]?\<\<\<[ \t]*({VAR_NAME}|([']{VAR_NAME}['])|(["]{VAR_NAME}["]))
 			}
 		}
 		l.ungetChars(ungetCnt)
-		lval.Token(l.newToken(heredocToken))
+		lval.Token(l.newToken(heredocToken, "T_START_HEREDOC"))
 		return T_START_HEREDOC
 	}
 yyrule142: // .|[ \t\n\r]
@@ -8530,20 +8530,20 @@ yyrule142: // .|[ \t\n\r]
 			}
 			c = l.Next()
 		}
-		lval.Token(l.newToken(tb))
+		lval.Token(l.newToken(tb, "T_ENCAPSED_AND_WHITESPACE"))
 		return T_ENCAPSED_AND_WHITESPACE
 	}
 yyrule143: // {VAR_NAME}\;
 	{
 		l.begin(PHP)
-		lval.Token(l.newToken(l.ungetChars(1)))
+		lval.Token(l.newToken(l.ungetChars(1), "T_END_HEREDOC"))
 		return T_END_HEREDOC
 		goto yystate0
 	}
 yyrule144: // {VAR_NAME}
 	{
 		l.begin(PHP)
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_END_HEREDOC"))
 		return T_END_HEREDOC
 		goto yystate0
 	}
@@ -8560,7 +8560,7 @@ yyrule145: // [b]?[\"]
 			l.ungetChars(len(l.Token()) - cnt)
 			chars := l.Token()[:cnt]
 			l.pushState(STRING)
-			lval.Token(l.newToken(chars))
+			lval.Token(l.newToken(chars, `"`))
 			return Rune2Class('"')
 		}
 	F:
@@ -8571,7 +8571,7 @@ yyrule145: // [b]?[\"]
 			switch c {
 			case '"':
 				c = l.Next()
-				lval.Token(l.newToken(l.Token()))
+				lval.Token(l.newToken(l.Token(), "T_CONSTANT_ENCAPSED_STRING"))
 				return T_CONSTANT_ENCAPSED_STRING
 				break F
 
@@ -8600,13 +8600,13 @@ yyrule145: // [b]?[\"]
 yyrule146: // \"
 	{
 		l.popState()
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), `"`))
 		return Rune2Class(l.Token()[0].Rune)
 		goto yystate0
 	}
 yyrule147: // \{\$
 	{
-		lval.Token(l.newToken(l.ungetChars(1)))
+		lval.Token(l.newToken(l.ungetChars(1), "T_CURLY_OPEN"))
 		l.pushState(PHP)
 		return T_CURLY_OPEN
 		goto yystate0
@@ -8614,7 +8614,7 @@ yyrule147: // \{\$
 yyrule148: // \$\{
 	{
 		l.pushState(STRING_VAR_NAME)
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_DOLLAR_OPEN_CURLY_BRACES"))
 		return T_DOLLAR_OPEN_CURLY_BRACES
 		goto yystate0
 	}
@@ -8634,13 +8634,13 @@ yyrule150: // .|[ \t\n\r]
 			case '$':
 				if c == '{' || isValidFirstVarNameRune(rune(c)) {
 					l.ungetChars(1)
-					lval.Token(l.newToken(tb[:len(tb)-1]))
+					lval.Token(l.newToken(tb[:len(tb)-1], "T_ENCAPSED_AND_WHITESPACE"))
 					return T_ENCAPSED_AND_WHITESPACE
 				}
 			case '{':
 				if rune(c) == '$' {
 					l.ungetChars(1)
-					lval.Token(l.newToken(tb[:len(tb)-1]))
+					lval.Token(l.newToken(tb[:len(tb)-1], "T_ENCAPSED_AND_WHITESPACE"))
 					return T_ENCAPSED_AND_WHITESPACE
 				}
 			case '\\':
@@ -8649,7 +8649,7 @@ yyrule150: // .|[ \t\n\r]
 				c = l.Next()
 			}
 			if rune(c) == '"' {
-				lval.Token(l.newToken(l.Token()))
+				lval.Token(l.newToken(l.Token(), "T_ENCAPSED_AND_WHITESPACE"))
 				return T_ENCAPSED_AND_WHITESPACE
 			}
 			currentChar = l.Last
@@ -8671,13 +8671,13 @@ yyrule151: // .|[ \t\n\r]
 			case '$':
 				if c == '{' || isValidFirstVarNameRune(rune(c)) {
 					l.ungetChars(1)
-					lval.Token(l.newToken(tb[:len(tb)-1]))
+					lval.Token(l.newToken(tb[:len(tb)-1], "T_ENCAPSED_AND_WHITESPACE"))
 					return T_ENCAPSED_AND_WHITESPACE
 				}
 			case '{':
 				if rune(c) == '$' {
 					l.ungetChars(1)
-					lval.Token(l.newToken(tb[:len(tb)-1]))
+					lval.Token(l.newToken(tb[:len(tb)-1], "T_ENCAPSED_AND_WHITESPACE"))
 					return T_ENCAPSED_AND_WHITESPACE
 				}
 			case '\\':
@@ -8686,7 +8686,7 @@ yyrule151: // .|[ \t\n\r]
 				c = l.Next()
 			}
 			if rune(c) == '`' {
-				lval.Token(l.newToken(l.Token()))
+				lval.Token(l.newToken(l.Token(), "T_ENCAPSED_AND_WHITESPACE"))
 				return T_ENCAPSED_AND_WHITESPACE
 			}
 			currentChar = l.Last
@@ -8722,13 +8722,13 @@ yyrule152: // .|[ \t\n\r]
 				if bytes.Equal(append(l.charsToBytes(heredocLabel), ';'), searchLabel) {
 					l.begin(HEREDOC_END)
 					tb = l.ungetChars(len(heredocLabel) + 1 + nls)
-					lval.Token(l.newToken(tb))
+					lval.Token(l.newToken(tb, "T_ENCAPSED_AND_WHITESPACE"))
 					return T_ENCAPSED_AND_WHITESPACE
 				}
 				if bytes.Equal(l.charsToBytes(heredocLabel), searchLabel) {
 					l.begin(HEREDOC_END)
 					tb = l.ungetChars(len(heredocLabel) + nls)
-					lval.Token(l.newToken(tb))
+					lval.Token(l.newToken(tb, "T_ENCAPSED_AND_WHITESPACE"))
 					return T_ENCAPSED_AND_WHITESPACE
 				}
 
@@ -8738,7 +8738,7 @@ yyrule152: // .|[ \t\n\r]
 				c = l.Next()
 				if rune(c) == '{' || isValidFirstVarNameRune(rune(c)) {
 					tb = l.ungetChars(1)
-					lval.Token(l.newToken(tb))
+					lval.Token(l.newToken(tb, "T_ENCAPSED_AND_WHITESPACE"))
 					return T_ENCAPSED_AND_WHITESPACE
 				}
 				l.ungetChars(0)
@@ -8747,7 +8747,7 @@ yyrule152: // .|[ \t\n\r]
 				c = l.Next()
 				if rune(c) == '$' {
 					tb = l.ungetChars(1)
-					lval.Token(l.newToken(tb))
+					lval.Token(l.newToken(tb, "T_ENCAPSED_AND_WHITESPACE"))
 					return T_ENCAPSED_AND_WHITESPACE
 				}
 				l.ungetChars(0)
@@ -8766,27 +8766,27 @@ yyrule152: // .|[ \t\n\r]
 	}
 yyrule153: // \${VAR_NAME}
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_VARIABLE"))
 		return T_VARIABLE
 		goto yystate0
 	}
 yyrule154: // ->{VAR_NAME}
 	{
-		lval.Token(l.newToken(l.ungetChars(len(l.Token()) - 2)))
+		lval.Token(l.newToken(l.ungetChars(len(l.Token())-2), "T_OBJECT_OPERATOR"))
 		return T_OBJECT_OPERATOR
 		goto yystate0
 	}
 yyrule155: // {VAR_NAME}
 	{
 		l.popState()
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_STRING"))
 		return T_STRING
 		goto yystate0
 	}
 yyrule156: // \[
 	{
 		l.pushState(STRING_VAR_INDEX)
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "["))
 		return Rune2Class(rune(l.TokenBytes(nil)[0]))
 		goto yystate0
 	}
@@ -8798,19 +8798,19 @@ yyrule157: // .|[ \t\n\r]
 	}
 yyrule158: // {LNUM}|{HNUM}|{BNUM}
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_NUM_STRING"))
 		return T_NUM_STRING
 		goto yystate0
 	}
 yyrule159: // \${VAR_NAME}
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_VARIABLE"))
 		return T_VARIABLE
 		goto yystate0
 	}
 yyrule160: // {VAR_NAME}
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_STRING"))
 		return T_STRING
 		goto yystate0
 	}
@@ -8818,7 +8818,7 @@ yyrule161: // \]
 	{
 		l.popState()
 		l.popState()
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "]"))
 		return Rune2Class(rune(l.TokenBytes(nil)[0]))
 		goto yystate0
 	}
@@ -8826,19 +8826,19 @@ yyrule162: // [ \n\r\t\\'#]
 	{
 		l.popState()
 		l.popState()
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "T_ENCAPSED_AND_WHITESPACE"))
 		return T_ENCAPSED_AND_WHITESPACE
 		goto yystate0
 	}
 yyrule163: // {OPERATORS}
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), string(rune(l.TokenBytes(nil)[0]))))
 		return Rune2Class(rune(l.TokenBytes(nil)[0]))
 		goto yystate0
 	}
 yyrule164: // .
 	{
-		lval.Token(l.newToken(l.Token()))
+		lval.Token(l.newToken(l.Token(), "."))
 		return Rune2Class(rune(l.TokenBytes(nil)[0]))
 		goto yystate0
 	}
@@ -8846,7 +8846,7 @@ yyrule165: // {VAR_NAME}[\[\}]
 	{
 		l.popState()
 		l.pushState(PHP)
-		lval.Token(l.newToken(l.ungetChars(1)))
+		lval.Token(l.newToken(l.ungetChars(1), "T_STRING_VARNAME"))
 		return T_STRING_VARNAME
 		goto yystate0
 	}

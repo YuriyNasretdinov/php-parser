@@ -16,7 +16,7 @@ func TestToken(t *testing.T) {
 	tkn := scanner.NewToken([]byte(`foo`), pos)
 
 	c := []*comment.Comment{
-		comment.NewComment("test comment", nil),
+		comment.NewComment("test comment", nil, ""),
 	}
 
 	tkn.SetComments(c)

@@ -11,7 +11,7 @@ import (
 func TestCommentGetPosition(t *testing.T) {
 	expected := position.NewPosition(0, 0, 0, 0)
 
-	comment := comment.NewComment("/** hello world */", expected)
+	comment := comment.NewComment("/** hello world */", expected, "")
 
 	actual := comment.Position()
 
@@ -21,13 +21,13 @@ func TestCommentGetPosition(t *testing.T) {
 }
 
 func TestCommentPrint(t *testing.T) {
-	expected := "/** hello world */"
+	expected := `"/** hello world */" before token "T_VARIABLE"`
 
-	comment := comment.NewComment(expected, nil)
+	comment := comment.NewComment("/** hello world */", nil, "T_VARIABLE")
 
 	actual := comment.String()
 
 	if expected != actual {
-		t.Errorf("expected and actual are not equal\n")
+		t.Errorf("expected and actual are not equal\nexpected: %q\nactual: %q", expected, actual)
 	}
 }
