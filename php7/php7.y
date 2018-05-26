@@ -3986,94 +3986,169 @@ constant:
 ;
 
 expr:
-        variable                                        { $$ = $1; }
-    |   expr_without_variable                           { $$ = $1; }
+        variable
+        { $$ = $1; }
+    |   expr_without_variable
+        { $$ = $1; }
 ;
 
 optional_expr:
-        /* empty */                                     { $$ = nil }
-    |   expr                                            { $$ = $1; }
+        /* empty */
+            { $$ = nil }
+    |   expr
+            { $$ = $1; }
 ;
 
 variable_class_name:
-    dereferencable                                      { $$ = $1; }
+    dereferencable
+        { $$ = $1; }
 ;
 
 dereferencable:
-        variable                                        { $$ = $1; }
-    |   '(' expr ')'                                    { $$ = $2; }
-    |   dereferencable_scalar                           { $$ = $1; }
+        variable
+            { $$ = $1; }
+    |   '(' expr ')'
+            {
+                $$ = $2;
+
+                // save comments
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($2, $3)
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   dereferencable_scalar
+            { $$ = $1; }
 ;
 
 callable_expr:
-        callable_variable                               { $$ = $1; }
-    |   '(' expr ')'                                    { $$ = $2; }
-    |   dereferencable_scalar                           { $$ = $1; }
+        callable_variable
+            { $$ = $1; }
+    |   '(' expr ')'
+            {
+                $$ = $2;
+
+                // save comments
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($2, $3)
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
+    |   dereferencable_scalar
+            { $$ = $1; }
 ;
 
 callable_variable:
-    simple_variable                                     { $$ = $1; }
+        simple_variable
+            { $$ = $1; }
     |   dereferencable '[' optional_expr ']'
-        {
-            $$ = expr.NewArrayDimFetch($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $4))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewArrayDimFetch($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $4))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                if $3 == nil {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $4)
+                } else {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken($3, $4)
+                }
+            }
     |   constant '[' optional_expr ']'
-        {
-            $$ = expr.NewArrayDimFetch($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $4))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewArrayDimFetch($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $4))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                if $3 == nil {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $4)
+                } else {
+                    yylex.(*Parser).addNodeAllCommentsFromNextToken($3, $4)
+                }
+            }
     |   dereferencable '{' expr '}'
-        {
-            $$ = expr.NewArrayDimFetch($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $4))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewArrayDimFetch($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodeTokenPosition($1, $4))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($3, $4)
+            }
     |   dereferencable T_OBJECT_OPERATOR property_name argument_list
-        {
-            $$ = expr.NewMethodCall($1, $3, $4.(*node.ArgumentList))
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $4))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
-    |   function_call                                   { $$ = $1; }
+            {
+                $$ = expr.NewMethodCall($1, $3, $4.(*node.ArgumentList))
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $4))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
+    |   function_call
+            { $$ = $1; }
 ;
 
 variable:
-        callable_variable                               { $$ = $1; }
-    |   static_member                                   { $$ = $1; }
+        callable_variable
+            { $$ = $1; }
+    |   static_member
+            { $$ = $1; }
     |   dereferencable T_OBJECT_OPERATOR property_name
-        {
-            $$ = expr.NewPropertyFetch($1, $3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
-            yylex.(*Parser).comments.AddComments($$, yylex.(*Parser).comments[$1])
-        }
+            {
+                $$ = expr.NewPropertyFetch($1, $3)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewNodesPosition($1, $3))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromChildNode($$, $1)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($1, $2)
+            }
 ;
 
 simple_variable:
-    T_VARIABLE
-        {
-            name := node.NewIdentifier(strings.TrimLeft($1.Value, "$"))
-            yylex.(*Parser).positions.AddPosition(name, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            $$ = expr.NewVariable(name)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
-            
-            yylex.(*Parser).comments.AddComments(name, $1.Comments())
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+        T_VARIABLE
+            {
+                name := node.NewIdentifier(strings.TrimLeft($1.Value, "$"))
+                $$ = expr.NewVariable(name)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition(name, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenPosition($1))
+                
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
     |   '$' '{' expr '}'
-        {
-            $$ = expr.NewVariable($3)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewVariable($3)
+                
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokensPosition($1, $4))
+                
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+                yylex.(*Parser).addNodeCommentsFromToken($$, $2)
+                yylex.(*Parser).addNodeAllCommentsFromNextToken($3, $4)
+            }
     |   '$' simple_variable
-        {
-            $$ = expr.NewVariable($2)
-            yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
-            yylex.(*Parser).comments.AddComments($$, $1.Comments())
-        }
+            {
+                $$ = expr.NewVariable($2)
+
+                // save position
+                yylex.(*Parser).positions.AddPosition($$, yylex.(*Parser).positionBuilder.NewTokenNodePosition($1, $2))
+
+                // save comments
+                yylex.(*Parser).addNodeCommentsFromToken($$, $1)
+            }
 ;
 
 static_member:

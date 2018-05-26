@@ -139,7 +139,5 @@ func ExampleDumper() {
 	//|                                               "VarName":
 	//|                                                 [*node.Identifier]
 	//|                                                   "Position": Pos{Line: 8-8 Pos: 124-127};
-	//|                                                   "Comments":
-	//|                                                     "// some comment\n"
 	//|                                                   "Value": var;
 }
