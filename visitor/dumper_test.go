@@ -107,8 +107,6 @@ func ExampleDumper() {
 	//|               "Stmts":
 	//|                 [*stmt.Expression]
 	//|                   "Position": Pos{Line: 8-8 Pos: 124-128};
-	//|                   "Comments":
-	//|                     "// some comment\n" before token "T_VARIABLE"
 	//|                   "Expr":
 	//|                     [*expr.Variable]
 	//|                       "Position": Pos{Line: 8-8 Pos: 124-127};
@@ -117,7 +115,5 @@ func ExampleDumper() {
 	//|                       "VarName":
 	//|                         [*node.Identifier]
 	//|                           "Position": Pos{Line: 8-8 Pos: 124-127};
-	//|                           "Comments":
-	//|                             "// some comment\n" before token "T_VARIABLE"
 	//|                           "Value": var;
 }
